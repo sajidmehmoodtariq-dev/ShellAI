@@ -24,12 +24,21 @@ jobs:
         run: go vet ./...
 
   build:
-    name: Build Linux Binaries
+    name: Build Release Binaries
     needs: test
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goarch: [amd64, arm64]
+        include:
+          - goos: linux
+            goarch: amd64
+            ext: ""
+          - goos: linux
+            goarch: arm64
+            ext: ""
+          - goos: windows
+            goarch: amd64
+            ext: ".exe"
     steps:
       - uses: actions/checkout@v4
 
@@ -43,16 +52,16 @@ jobs:
           mkdir -p dist
           VERSION="${GITHUB_REF_NAME}"
           BUILD_DATE="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-          GOOS=linux GOARCH=${{ matrix.goarch }} go build \
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
             -ldflags "-X main.version=${VERSION} -X main.commit=${{ github.sha }} -X main.buildDate=${BUILD_DATE}" \
-            -o dist/shellai-${VERSION}-linux-${{ matrix.goarch }} \
+            -o dist/shellai-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }} \
             ./cmd
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: shellai-linux-${{ matrix.goarch }}
-          path: dist/shellai-${{ github.ref_name }}-linux-${{ matrix.goarch }}
+          name: shellai-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/shellai-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
 
   checksum:
     name: Generate Checksums
@@ -69,6 +78,7 @@ jobs:
           mkdir -p release-assets
           cp artifacts/shellai-linux-amd64/shellai-${GITHUB_REF_NAME}-linux-amd64 release-assets/
           cp artifacts/shellai-linux-arm64/shellai-${GITHUB_REF_NAME}-linux-arm64 release-assets/
+          cp artifacts/shellai-windows-amd64/shellai-${GITHUB_REF_NAME}-windows-amd64.exe release-assets/
           (cd release-assets && sha256sum shellai-* > SHA256SUMS)
           ls -la release-assets
 
@@ -153,6 +163,7 @@ jobs:
 
             - Linux amd64 binary
             - Linux arm64 binary
+            - Windows amd64 binary
             - SHA256SUMS checksum file
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

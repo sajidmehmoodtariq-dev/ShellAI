@@ -44,11 +44,11 @@ Global flags include:
 
 ShellAI supports three ways to get started:
 
-1. One-line installer (best for Linux users)
-2. Manual download from GitHub Releases
-3. Build from source (works for Linux, macOS, and Windows)
+1. One-line installer (Linux and macOS)
+2. Manual download from GitHub Releases (Linux and Windows)
+3. Build from source (Linux, macOS, and Windows)
 
-### Option 1: One-line installer
+### Option 1: One-line installer (Linux and macOS)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sajidmehmoodtariq-dev/ShellAI/main/install.sh | bash
@@ -67,10 +67,10 @@ The installer:
 - Verifies SHA256 checksum.
 - Installs to `/usr/local/bin` (or a fallback path if needed).
 
-Note:
+Notes:
 
-- Current published release binaries are Linux-only (`amd64`, `arm64`).
-- On macOS and Windows, use Option 3 (build from source) unless Linux/macOS release assets are added later.
+- The installer supports Linux and macOS style environments.
+- Windows users should use Option 2 or Option 3.
 
 ### Option 2: Manual download from Releases
 
@@ -83,20 +83,32 @@ Note:
 sha256sum -c SHA256SUMS
 ```
 
-5. Install:
+5. Install on Linux:
 
 ```bash
 chmod +x shellai-<version>-linux-<arch>
 sudo mv shellai-<version>-linux-<arch> /usr/local/bin/shellai
 ```
 
-6. Verify installation:
+6. Install on Windows (PowerShell):
+
+```
+New-Item -ItemType Directory -Force -Path $env:USERPROFILE\bin | Out-Null
+Copy-Item .\shellai-<version>-windows-amd64.exe $env:USERPROFILE\bin\shellai.exe -Force
+$env:PATH = "$env:USERPROFILE\bin;$env:PATH"
+```
+
+7. Verify installation:
 
 ```bash
 shellai --version
 ```
 
-For current releases, manual binaries are available for Linux `amd64` and `arm64`.
+Current release artifacts:
+
+- Linux amd64
+- Linux arm64
+- Windows amd64
 
 ### Option 3: Build from source (Linux/macOS/Windows)
 
@@ -129,6 +141,7 @@ make clean
 
 - Linux amd64
 - Linux arm64
+- Windows amd64
 
 ## Quick Start
 
@@ -176,7 +189,7 @@ GitHub Actions is configured to run on tagged releases.
 On `v*` tags, it will:
 
 1. Run test and vet checks.
-2. Build Linux binaries (amd64 and arm64).
+2. Build Linux binaries (amd64 and arm64) and a Windows binary (amd64).
 3. Generate checksums.
 4. Validate installer flow.
 5. Publish release assets.
