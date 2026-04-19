@@ -3,8 +3,6 @@ package ui
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -16,6 +14,7 @@ import (
 	"shellai/internal/executor"
 	"shellai/internal/llm"
 	"shellai/internal/parser"
+	"shellai/internal/platformdb"
 	"shellai/internal/safety"
 	"shellai/internal/search"
 )
@@ -108,9 +107,8 @@ func NewModel() (model, error) {
 
 	renderer, _ := glamour.NewTermRenderer(glamour.WithAutoStyle(), glamour.WithWordWrap(90))
 
-	home, _ := os.UserHomeDir()
-	userDB := filepath.Join(home, ".config", "shellai", "user_commands.json")
-	eng, err := search.NewEngineFromDatabases(filepath.Join("db", "commands.json"), userDB)
+	userDB := platformdb.UserCommandsPath()
+	eng, err := search.NewEngineFromDatabases(platformdb.CoreCommandsPath(), userDB)
 	if err != nil {
 		return model{}, err
 	}

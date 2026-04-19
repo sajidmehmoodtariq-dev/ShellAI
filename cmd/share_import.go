@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"shellai/internal/platformdb"
 	"shellai/internal/search"
 
 	"gopkg.in/yaml.v3"
@@ -107,7 +108,7 @@ func runImport(args []string) error {
 		return err
 	}
 
-	if _, err := search.NewEngineFromDatabases(filepath.Join("db", "commands.json"), userCommandsPath()); err != nil {
+	if _, err := search.NewEngineFromDatabases(platformdb.CoreCommandsPath(), userCommandsPath()); err != nil {
 		return fmt.Errorf("import saved but re-index failed: %w", err)
 	}
 

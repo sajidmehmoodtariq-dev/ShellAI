@@ -1,0 +1,602 @@
+[
+	{
+		"intent": "Copy a file from one location to another",
+		"keywords": ["copy file", "duplicate file", "cp file", "copy this file", "copy a file"],
+		"command_template": "cp {source} {destination}",
+		"explanation": "Copies a single file to a new path.",
+		"flags": [
+			{"flag": "-i", "description": "Prompt before overwrite."},
+			{"flag": "-v", "description": "Show each copied file."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Copy a directory recursively",
+		"keywords": ["copy folder", "copy directory", "duplicate folder", "cp recursive", "clone directory"],
+		"command_template": "cp -r {source} {destination}",
+		"explanation": "Copies a directory and all nested files and folders.",
+		"flags": [
+			{"flag": "-r", "description": "Copy directories recursively."},
+			{"flag": "-a", "description": "Preserve attributes and copy recursively."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Move a file or directory to another path",
+		"keywords": ["move file", "move folder", "relocate file", "mv", "move this"],
+		"command_template": "mv {source} {destination}",
+		"explanation": "Moves a file or directory to a new location.",
+		"flags": [
+			{"flag": "-i", "description": "Prompt before overwrite."},
+			{"flag": "-v", "description": "Show moved items."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Rename a file or directory",
+		"keywords": ["rename file", "rename folder", "change name", "mv rename", "rename this"],
+		"command_template": "mv {old_name} {new_name}",
+		"explanation": "Renames a file or directory by moving it to a new name.",
+		"flags": [
+			{"flag": "-i", "description": "Prompt before overwrite."},
+			{"flag": "-n", "description": "Do not overwrite existing files."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Delete a file",
+		"keywords": ["delete file", "remove file", "rm file", "erase file", "trash file"],
+		"command_template": "rm {target}",
+		"explanation": "Deletes a single file from disk.",
+		"flags": [
+			{"flag": "-i", "description": "Prompt before deletion."},
+			{"flag": "-f", "description": "Ignore missing files and never prompt."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Delete an empty directory",
+		"keywords": ["remove empty folder", "delete empty directory", "rmdir", "remove empty dir", "delete empty folder"],
+		"command_template": "rmdir {target}",
+		"explanation": "Removes a directory only if it is empty.",
+		"flags": [
+			{"flag": "--ignore-fail-on-non-empty", "description": "Ignore failures for non-empty directories."},
+			{"flag": "-v", "description": "Print each removed directory."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Delete a directory and everything inside",
+		"keywords": ["delete folder recursively", "remove directory recursively", "rm -r", "delete directory tree", "erase folder"],
+		"command_template": "rm -r {target}",
+		"explanation": "Deletes a directory and all nested files and folders.",
+		"flags": [
+			{"flag": "-r", "description": "Delete directories and their contents recursively."},
+			{"flag": "-i", "description": "Prompt before each removal."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Force delete a directory tree without prompts",
+		"keywords": ["force delete folder", "rm -rf", "nuke directory", "hard delete folder", "delete without prompt"],
+		"command_template": "rm -rf {target}",
+		"explanation": "Forcefully removes a directory tree without confirmation prompts.",
+		"flags": [
+			{"flag": "-r", "description": "Delete directories recursively."},
+			{"flag": "-f", "description": "Force deletion and suppress prompts."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Create a directory path",
+		"keywords": ["make folder", "create directory", "mkdir", "create folder", "new directory"],
+		"command_template": "mkdir -p {path}",
+		"explanation": "Creates a directory and any missing parent directories.",
+		"flags": [
+			{"flag": "-p", "description": "Create parent directories as needed."},
+			{"flag": "-m", "description": "Set permission mode on creation."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Create an empty file or update file timestamp",
+		"keywords": ["create empty file", "touch file", "new file", "make file", "update timestamp"],
+		"command_template": "touch {file}",
+		"explanation": "Creates an empty file if missing or updates its modified time.",
+		"flags": [
+			{"flag": "-a", "description": "Change access time only."},
+			{"flag": "-m", "description": "Change modification time only."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "List files in a directory with details",
+		"keywords": ["list files", "show directory contents", "ls", "list folder", "show files"],
+		"command_template": "ls -la {path}",
+		"explanation": "Lists files including hidden ones with detailed metadata.",
+		"flags": [
+			{"flag": "-l", "description": "Use long listing format."},
+			{"flag": "-a", "description": "Include hidden files."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Find files by name pattern",
+		"keywords": ["find file", "search file by name", "locate file", "find by pattern", "find filename"],
+		"command_template": "find {path} -name \"{pattern}\"",
+		"explanation": "Searches recursively for files and directories that match a name pattern.",
+		"flags": [
+			{"flag": "-type f", "description": "Limit results to files only."},
+			{"flag": "-iname", "description": "Case-insensitive name matching."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Find files by extension",
+		"keywords": ["find by extension", "search files by type", "find .log files", "find file extension", "filter extension"],
+		"command_template": "find {path} -type f -name \"*.{extension}\"",
+		"explanation": "Finds files matching a specific extension under a path.",
+		"flags": [
+			{"flag": "-type f", "description": "Return files only."},
+			{"flag": "-maxdepth", "description": "Limit recursion depth."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Search for text inside files",
+		"keywords": ["find text in files", "grep text", "search string", "text search", "find content"],
+		"command_template": "grep -R \"{query}\" {path}",
+		"explanation": "Recursively searches file contents for a text pattern.",
+		"flags": [
+			{"flag": "-R", "description": "Search recursively."},
+			{"flag": "-n", "description": "Show matching line numbers."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Compress files into a tar.gz archive",
+		"keywords": ["compress tar gz", "create tarball", "archive folder", "tar gzip", "pack files"],
+		"command_template": "tar -czf {archive}.tar.gz {source}",
+		"explanation": "Creates a compressed tar.gz archive from files or folders.",
+		"flags": [
+			{"flag": "-c", "description": "Create a new archive."},
+			{"flag": "-v", "description": "Show files being archived."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Extract a tar.gz archive",
+		"keywords": ["extract tar gz", "untar file", "unpack tarball", "decompress archive", "extract archive"],
+		"command_template": "tar -xzf {archive}.tar.gz -C {destination}",
+		"explanation": "Extracts a tar.gz archive into the target directory.",
+		"flags": [
+			{"flag": "-x", "description": "Extract archive contents."},
+			{"flag": "-v", "description": "Show files as they are extracted."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Compress files into a zip archive",
+		"keywords": ["zip files", "compress zip", "create zip", "archive to zip", "zip folder"],
+		"command_template": "zip -r {archive}.zip {source}",
+		"explanation": "Creates a zip archive from the given source path.",
+		"flags": [
+			{"flag": "-r", "description": "Include directories recursively."},
+			{"flag": "-9", "description": "Use maximum compression."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Extract a zip archive",
+		"keywords": ["unzip file", "extract zip", "decompress zip", "unpack zip", "open zip"],
+		"command_template": "unzip {archive}.zip -d {destination}",
+		"explanation": "Extracts a zip archive into the specified folder.",
+		"flags": [
+			{"flag": "-d", "description": "Set output directory."},
+			{"flag": "-o", "description": "Overwrite files without prompting."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Calculate a SHA-256 checksum for a file",
+		"keywords": ["hash file", "sha256", "checksum file", "verify integrity", "file digest"],
+		"command_template": "sha256sum {file}",
+		"explanation": "Prints a SHA-256 checksum to verify file integrity.",
+		"flags": [
+			{"flag": "-b", "description": "Read file in binary mode."},
+			{"flag": "-c", "description": "Check checksums from a file."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Compare two files line by line",
+		"keywords": ["diff files", "compare files", "show file differences", "file delta", "difference between files"],
+		"command_template": "diff {file_a} {file_b}",
+		"explanation": "Shows line-by-line differences between two files.",
+		"flags": [
+			{"flag": "-u", "description": "Show unified diff format."},
+			{"flag": "-y", "description": "Show side-by-side diff output."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Set file permissions with numeric mode",
+		"keywords": ["chmod file", "change permissions", "set mode", "permission bits", "chmod 755"],
+		"command_template": "chmod {mode} {path}",
+		"explanation": "Sets file or directory permission bits using numeric or symbolic mode.",
+		"flags": [
+			{"flag": "-R", "description": "Apply permissions recursively."},
+			{"flag": "-v", "description": "Print changed files."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Set file permissions recursively",
+		"keywords": ["chmod recursive", "change permissions recursively", "chmod -R", "fix folder permissions", "apply permissions to all files"],
+		"command_template": "chmod -R {mode} {path}",
+		"explanation": "Applies permission changes to all files and folders under a path.",
+		"flags": [
+			{"flag": "-R", "description": "Traverse directories recursively."},
+			{"flag": "-c", "description": "Report only when changes are made."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Change file owner and group",
+		"keywords": ["chown file", "change owner", "set file owner", "ownership change", "chown user group"],
+		"command_template": "chown {owner}:{group} {path}",
+		"explanation": "Updates file ownership to the specified user and group.",
+		"flags": [
+			{"flag": "-R", "description": "Apply ownership changes recursively."},
+			{"flag": "-v", "description": "Print ownership changes."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Change ownership recursively for a directory tree",
+		"keywords": ["chown recursive", "change owner recursively", "chown -R", "fix ownership", "set owner on folder tree"],
+		"command_template": "chown -R {owner}:{group} {path}",
+		"explanation": "Changes ownership for all files and directories under a path.",
+		"flags": [
+			{"flag": "-R", "description": "Apply recursively."},
+			{"flag": "-h", "description": "Affect symlink itself instead of target."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Change the group ownership of a file",
+		"keywords": ["change group", "chgrp", "set group owner", "group ownership", "change file group"],
+		"command_template": "chgrp {group} {path}",
+		"explanation": "Changes the group owner of the target file or directory.",
+		"flags": [
+			{"flag": "-R", "description": "Apply group change recursively."},
+			{"flag": "-v", "description": "Print changed files."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Show who can read write or execute a file",
+		"keywords": ["who can read this", "show permissions", "file permission details", "ls -l", "access rights"],
+		"command_template": "ls -l {path}",
+		"explanation": "Displays permission bits along with owner and group information.",
+		"flags": [
+			{"flag": "-l", "description": "Use long listing with permission metadata."},
+			{"flag": "-d", "description": "Show directory entry instead of its contents."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Check whether current user can read a path",
+		"keywords": ["can I read this file", "read permission check", "is readable", "test read access", "who can read this file"],
+		"command_template": "test -r {path} ; echo $?",
+		"explanation": "Returns status code indicating whether the path is readable by the current user.",
+		"flags": [
+			{"flag": "-r", "description": "Test for read permission."},
+			{"flag": "-e", "description": "Test whether the path exists."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Check whether current user can write to a path",
+		"keywords": ["can I write here", "write permission check", "is writable", "test write access", "who can modify this"],
+		"command_template": "test -w {path} ; echo $?",
+		"explanation": "Returns status code indicating whether the path is writable by the current user.",
+		"flags": [
+			{"flag": "-w", "description": "Test for write permission."},
+			{"flag": "-e", "description": "Test whether the path exists."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Check whether a file is executable",
+		"keywords": ["is executable", "can run this file", "execute permission", "test execute bit", "check x permission"],
+		"command_template": "test -x {path} ; echo $?",
+		"explanation": "Returns status code indicating whether the path is executable.",
+		"flags": [
+			{"flag": "-x", "description": "Test for execute permission."},
+			{"flag": "-e", "description": "Test whether path exists."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Show ACL rules for a file or directory",
+		"keywords": ["show acl", "getfacl", "advanced permissions", "who has access", "acl entries"],
+		"command_template": "getfacl {path}",
+		"explanation": "Prints access control list entries with fine-grained permission rules.",
+		"flags": [
+			{"flag": "-R", "description": "List ACLs recursively."},
+			{"flag": "-c", "description": "Omit file header comments."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "List running processes",
+		"keywords": ["list processes", "show running processes", "ps aux", "running tasks", "process list"],
+		"command_template": "ps aux",
+		"explanation": "Shows currently running processes with CPU and memory usage.",
+		"flags": [
+			{"flag": "aux", "description": "Show all processes in BSD format."},
+			{"flag": "--sort=-%cpu", "description": "Sort by CPU usage descending."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Find processes by name",
+		"keywords": ["find process", "search process name", "grep process", "is process running", "lookup process"],
+		"command_template": "ps aux | grep {name}",
+		"explanation": "Filters process list to entries matching a given name pattern.",
+		"flags": [
+			{"flag": "-i", "description": "Case-insensitive match in grep."},
+			{"flag": "-v grep", "description": "Exclude grep process from results."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Stop a process by PID",
+		"keywords": ["kill process", "stop process", "terminate pid", "kill by pid", "end process"],
+		"command_template": "kill {pid}",
+		"explanation": "Sends a termination signal to the specified process ID.",
+		"flags": [
+			{"flag": "-15", "description": "Send SIGTERM for graceful shutdown."},
+			{"flag": "-9", "description": "Send SIGKILL for immediate stop."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Force kill a process by PID",
+		"keywords": ["force kill process", "kill -9", "hard kill pid", "kill immediately", "terminate now"],
+		"command_template": "kill -9 {pid}",
+		"explanation": "Immediately stops a process without allowing cleanup.",
+		"flags": [
+			{"flag": "-9", "description": "Send SIGKILL."},
+			{"flag": "-l", "description": "List available signal names."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Kill processes by name pattern",
+		"keywords": ["kill by name", "pkill", "stop all matching processes", "terminate process name", "kill process pattern"],
+		"command_template": "pkill {name}",
+		"explanation": "Terminates all processes matching the supplied name pattern.",
+		"flags": [
+			{"flag": "-f", "description": "Match against full command line."},
+			{"flag": "-9", "description": "Force kill with SIGKILL."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Monitor live process activity",
+		"keywords": ["top", "live process monitor", "watch cpu usage", "watch memory usage", "process monitor"],
+		"command_template": "top",
+		"explanation": "Opens an interactive live view of running processes and system usage.",
+		"flags": [
+			{"flag": "-o %CPU", "description": "Sort by CPU usage."},
+			{"flag": "-p", "description": "Monitor only specified PIDs."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Show process tree for a PID",
+		"keywords": ["process tree", "show parent child process", "pstree", "tree of process", "pid hierarchy"],
+		"command_template": "pstree -p {pid}",
+		"explanation": "Displays parent and child process relationships for a PID.",
+		"flags": [
+			{"flag": "-p", "description": "Show process IDs."},
+			{"flag": "-a", "description": "Show command line arguments."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Find what process is using a port",
+		"keywords": ["what is using port", "port in use", "find pid on port", "lsof port", "who uses port"],
+		"command_template": "lsof -i :{port}",
+		"explanation": "Lists processes currently bound to the specified network port.",
+		"flags": [
+			{"flag": "-i", "description": "Select files matching network addresses."},
+			{"flag": "-P", "description": "Show numeric port numbers."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Kill whatever is using a TCP port",
+		"keywords": ["kill port", "free up port", "stop process on port", "fuser kill", "release port"],
+		"command_template": "fuser -k {port}/tcp",
+		"explanation": "Terminates processes using the specified TCP port.",
+		"flags": [
+			{"flag": "-k", "description": "Kill processes accessing the file or socket."},
+			{"flag": "-v", "description": "Show verbose process details."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Show CPU and memory usage for a specific PID",
+		"keywords": ["pid cpu memory", "show process usage", "ps by pid", "resource usage of process", "process stats"],
+		"command_template": "ps -p {pid} -o pid,%cpu,%mem,cmd",
+		"explanation": "Prints CPU and memory usage metrics for one process.",
+		"flags": [
+			{"flag": "-p", "description": "Select process by PID."},
+			{"flag": "-o", "description": "Choose output columns."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Ping a host to test network reachability",
+		"keywords": ["ping host", "check connectivity", "is host reachable", "network ping", "test latency"],
+		"command_template": "ping -c {count} {host}",
+		"explanation": "Sends ICMP echo requests to verify reachability and latency.",
+		"flags": [
+			{"flag": "-c", "description": "Set number of ping requests."},
+			{"flag": "-W", "description": "Set timeout for each reply."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Resolve a domain name to DNS records",
+		"keywords": ["dns lookup", "nslookup", "resolve domain", "check dns", "find ip for domain"],
+		"command_template": "nslookup {domain}",
+		"explanation": "Queries DNS to resolve a domain and related records.",
+		"flags": [
+			{"flag": "-type=A", "description": "Request IPv4 A records."},
+			{"flag": "-type=MX", "description": "Request mail exchanger records."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "List listening and open network ports",
+		"keywords": ["check open ports", "list listening ports", "open sockets", "ss tuln", "show ports"],
+		"command_template": "ss -tuln",
+		"explanation": "Displays TCP and UDP sockets currently listening on the system.",
+		"flags": [
+			{"flag": "-t", "description": "Show TCP sockets."},
+			{"flag": "-u", "description": "Show UDP sockets."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Download a file with curl",
+		"keywords": ["download file", "curl download", "fetch url", "save from url", "get remote file"],
+		"command_template": "curl -L {url} -o {output}",
+		"explanation": "Downloads content from a URL and saves it to a local file.",
+		"flags": [
+			{"flag": "-L", "description": "Follow HTTP redirects."},
+			{"flag": "-o", "description": "Write output to a file."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Download a file with wget",
+		"keywords": ["wget file", "download with wget", "fetch with wget", "wget url", "retrieve remote file"],
+		"command_template": "wget {url} -O {output}",
+		"explanation": "Retrieves a file from a URL and writes it to a chosen path.",
+		"flags": [
+			{"flag": "-O", "description": "Set output filename."},
+			{"flag": "-c", "description": "Continue partially downloaded files."}
+		],
+		"danger": true,
+		"platform": "linux"
+	},
+	{
+		"intent": "Fetch only HTTP headers from a URL",
+		"keywords": ["check url headers", "http headers", "curl head request", "inspect response headers", "header only request"],
+		"command_template": "curl -I {url}",
+		"explanation": "Sends a HEAD request to inspect response headers without downloading body content.",
+		"flags": [
+			{"flag": "-I", "description": "Use HEAD request."},
+			{"flag": "-L", "description": "Follow redirects before showing headers."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Show disk free and used space across filesystems",
+		"keywords": ["how much space left", "disk free", "df", "filesystem usage", "remaining disk space"],
+		"command_template": "df -h",
+		"explanation": "Reports free and used space for mounted filesystems.",
+		"flags": [
+			{"flag": "-h", "description": "Show sizes in human-readable units."},
+			{"flag": "-T", "description": "Include filesystem type."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Show total size used by a directory",
+		"keywords": ["folder size", "directory size", "du", "how big is folder", "space used by path"],
+		"command_template": "du -sh {path}",
+		"explanation": "Calculates summarized disk usage for a target directory.",
+		"flags": [
+			{"flag": "-s", "description": "Show only a total summary."},
+			{"flag": "-h", "description": "Show human-readable sizes."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Find the largest files under a path",
+		"keywords": ["what is taking space", "largest files", "biggest files", "top large files", "find huge files"],
+		"command_template": "find {path} -type f -exec du -h {} + | sort -hr | head -n {count}",
+		"explanation": "Lists the largest files in a directory tree to help locate space usage.",
+		"flags": [
+			{"flag": "-type f", "description": "Search only files."},
+			{"flag": "head -n", "description": "Limit number of results returned."}
+		],
+		"danger": false,
+		"platform": "linux"
+	},
+	{
+		"intent": "Show block device and partition information",
+		"keywords": ["disk info", "show drives", "list disks", "lsblk", "partition info"],
+		"command_template": "lsblk -f",
+		"explanation": "Displays disks, partitions, filesystems, and mount points.",
+		"flags": [
+			{"flag": "-f", "description": "Show filesystem details."},
+			{"flag": "-o", "description": "Customize output columns."}
+		],
+		"danger": false,
+		"platform": "linux"
+	}
+]
