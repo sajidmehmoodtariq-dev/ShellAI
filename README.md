@@ -21,9 +21,9 @@ It combines command search, templates, safety checks, optional LLM explanations,
 - Optional LLM explanation mode.
 - Bubble Tea based terminal UI.
 - Custom command management:
-	- `shellai add`
-	- `shellai share`
-	- `shellai import`
+ 	- `shellai add`
+ 	- `shellai share`
+ 	- `shellai import`
 
 ## Command Surface
 
@@ -32,6 +32,7 @@ It combines command search, templates, safety checks, optional LLM explanations,
 - `shellai share` - export user command entries.
 - `shellai import` - import command entries from file or URL.
 - `shellai update-db` - refresh installed command database for your platform.
+- `shellai stats` - review hit counts and never-matched commands.
 - `shellai explain` - force explanation mode.
 - `shellai llm install|remove|status` - manage LLM backend status.
 
@@ -48,7 +49,7 @@ ShellAI supports three ways to get started:
 1. One-line installer (Linux and macOS)
 2. One-line installer (Windows PowerShell)
 3. Manual download from GitHub Releases (Linux and Windows)
-3. Build from source (Linux, macOS, and Windows)
+4. Build from source (Linux, macOS, and Windows)
 
 ### Option 1: One-line installer (Linux and macOS)
 
@@ -79,19 +80,19 @@ Notes:
 
 Run in PowerShell:
 
-```
+``` powershell
 iwr -useb https://raw.githubusercontent.com/sajidmehmoodtariq-dev/ShellAI/main/install.ps1 | iex
 ```
 
 Install a specific version:
 
-```
+``` powershell
 $env:SHELLAI_VERSION='v0.1.4'; iwr -useb https://raw.githubusercontent.com/sajidmehmoodtariq-dev/ShellAI/main/install.ps1 | iex
 ```
 
 If `shellai` is not recognized immediately, open a new terminal and run:
 
-```
+``` powershell
 shellai --version
 ```
 
@@ -116,22 +117,22 @@ The Windows installer:
 sha256sum -c SHA256SUMS
 ```
 
-5. Install on Linux:
+1. Install on Linux:
 
 ```bash
 chmod +x shellai-<version>-linux-<arch>
 sudo mv shellai-<version>-linux-<arch> /usr/local/bin/shellai
 ```
 
-6. Install on Windows (PowerShell):
+1. Install on Windows (PowerShell):
 
-```
+``` powershell
 New-Item -ItemType Directory -Force -Path $env:USERPROFILE\bin | Out-Null
 Copy-Item .\shellai-<version>-windows-amd64.exe $env:USERPROFILE\bin\shellai.exe -Force
 $env:PATH = "$env:USERPROFILE\bin;$env:PATH"
 ```
 
-7. Verify installation:
+1. Verify installation:
 
 ```bash
 shellai --version
@@ -229,6 +230,32 @@ Pin to a specific release tag:
 
 ```bash
 shellai update-db --version v0.1.4
+```
+
+## Accuracy Feedback Loop
+
+After each command run in the TUI, ShellAI asks for one-key feedback:
+
+- `y` = command/result was correct
+- `n` = incorrect match (logged as miss)
+
+Misses are stored locally in:
+
+`~/.config/shellai/misses.log`
+
+Each miss records:
+
+- raw query
+- returned command
+
+Match hit counts are stored in:
+
+`~/.config/shellai/hits.json`
+
+Use this to review quality trends and zero-hit entries:
+
+```bash
+shellai stats
 ```
 
 ## Release Automation

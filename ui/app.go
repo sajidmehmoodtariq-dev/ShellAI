@@ -13,6 +13,7 @@ import (
 
 	"shellai/internal/config"
 	"shellai/internal/executor"
+	"shellai/internal/feedback"
 	"shellai/internal/llm"
 	"shellai/internal/parser"
 	"shellai/internal/safety"
@@ -80,6 +81,7 @@ type model struct {
 	runDone    bool
 	runStatus  string
 	runCh      chan tea.Msg
+	feedback   *feedback.Store
 	explainRaw string
 	explainMD  string
 	explainEnd bool
@@ -127,6 +129,7 @@ func NewModel() (model, error) {
 		search:     eng,
 		tmpl:       executor.NewTemplateEngine(),
 		runner:     executor.NewRunner(),
+		feedback:   feedback.NewStore(),
 		explainer:  explainer,
 		markdown:   renderer,
 		manualVals: map[string]string{},
@@ -212,6 +215,9 @@ func (m model) updateInput(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) updateSearching(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case searchDoneMsg:
+		if err := m.feedback.RecordMatches(msg.matches); err != nil {
+			m.errText = err.Error()
+		}
 		if len(msg.matches) == 0 {
 			m.state = stateInput
 			m.errText = "No matching command found. Try a clearer request."
@@ -366,10 +372,26 @@ func (m model) updateRunning(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		if m.runDone && (msg.String() == "enter" || msg.String() == "esc") {
+		if !m.runDone {
+			return m, nil
+		}
+
+		switch msg.String() {
+		case "y":
 			m.state = stateInput
 			m.input.SetValue("")
 			m.confirm.SetValue("")
+			return m, nil
+		case "n":
+			if err := m.feedback.RecordMiss(m.query, m.finalCmd); err != nil {
+				m.errText = err.Error()
+			}
+			m.state = stateInput
+			m.input.SetValue("")
+			m.confirm.SetValue("")
+			return m, nil
+		case "enter", "esc":
+			m.errText = "Rate result first: y = correct, n = incorrect."
 			return m, nil
 		}
 	}
@@ -611,7 +633,7 @@ func (m model) viewRunning() string {
 		parts = append(parts, m.theme.SectionTitle.Render("Errors"), m.theme.Output.Render(strings.Join(m.runErr, "\n")))
 	}
 	if m.runDone {
-		parts = append(parts, m.theme.Hint.Render("Enter: continue"))
+		parts = append(parts, m.theme.Hint.Render("Was this correct? y: yes  |  n: no (logs miss)"))
 	}
 	if m.errText != "" {
 		parts = append(parts, m.theme.Error.Render(m.errText))
