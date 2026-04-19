@@ -8,6 +8,28 @@ import (
 	"testing"
 )
 
+func stripShellStartupNoise(stderr string) string {
+	trimmed := strings.TrimSpace(stderr)
+	if trimmed == "" {
+		return ""
+	}
+
+	lines := strings.Split(trimmed, "\n")
+	kept := make([]string, 0, len(lines))
+	for _, line := range lines {
+		lower := strings.ToLower(strings.TrimSpace(line))
+		if strings.Contains(lower, "cannot set terminal process group") {
+			continue
+		}
+		if strings.Contains(lower, "no job control in this shell") {
+			continue
+		}
+		kept = append(kept, line)
+	}
+
+	return strings.TrimSpace(strings.Join(kept, "\n"))
+}
+
 func TestRunnerCapturesStdoutAndStderr(t *testing.T) {
 	runner := NewRunner()
 	tmp := t.TempDir()
@@ -39,7 +61,8 @@ func TestRunnerCapturesStdoutAndStderr(t *testing.T) {
 		t.Fatalf("expected stdout to contain %q, got: %q", fileName, result.Stdout)
 	}
 
-	if strings.TrimSpace(result.Stderr) != "" {
+	cleanedStderr := stripShellStartupNoise(result.Stderr)
+	if cleanedStderr != "" {
 		t.Fatalf("expected empty stderr, got: %q", result.Stderr)
 	}
 
@@ -47,7 +70,8 @@ func TestRunnerCapturesStdoutAndStderr(t *testing.T) {
 		t.Fatalf("expected streamed stdout events")
 	}
 
-	if len(streamedStderr) != 0 {
+	combinedStreamedStderr := stripShellStartupNoise(strings.Join(streamedStderr, ""))
+	if combinedStreamedStderr != "" {
 		t.Fatalf("expected no streamed stderr events, got: %v", streamedStderr)
 	}
 }

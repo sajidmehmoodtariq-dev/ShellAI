@@ -42,7 +42,13 @@ Global flags include:
 
 ## Download and Install
 
-### Option 1: One-line installer (recommended)
+ShellAI supports three ways to get started:
+
+1. One-line installer (best for Linux users)
+2. Manual download from GitHub Releases
+3. Build from source (works for Linux, macOS, and Windows)
+
+### Option 1: One-line installer
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sajidmehmoodtariq-dev/ShellAI/main/install.sh | bash
@@ -60,6 +66,11 @@ The installer:
 - Downloads the matching binary from GitHub Releases.
 - Verifies SHA256 checksum.
 - Installs to `/usr/local/bin` (or a fallback path if needed).
+
+Note:
+
+- Current published release binaries are Linux-only (`amd64`, `arm64`).
+- On macOS and Windows, use Option 3 (build from source) unless Linux/macOS release assets are added later.
 
 ### Option 2: Manual download from Releases
 
@@ -83,6 +94,35 @@ sudo mv shellai-<version>-linux-<arch> /usr/local/bin/shellai
 
 ```bash
 shellai --version
+```
+
+For current releases, manual binaries are available for Linux `amd64` and `arm64`.
+
+### Option 3: Build from source (Linux/macOS/Windows)
+
+Prerequisites:
+
+- Go 1.26.2+
+
+Build:
+
+```bash
+go build -o shellai ./cmd
+```
+
+Run tests:
+
+```bash
+go test ./...
+```
+
+If you use `make`, helper targets are available:
+
+```bash
+make build
+make test
+make install
+make clean
 ```
 
 ## Supported Release Platforms
@@ -128,33 +168,6 @@ Config precedence:
 2. CLI flags
 3. Config file
 4. Built-in defaults
-
-## Build From Source
-
-Prerequisites:
-
-- Go 1.26.2+
-
-Build:
-
-```bash
-go build -o shellai ./cmd
-```
-
-Run tests:
-
-```bash
-go test ./...
-```
-
-If you use `make`, helper targets are available:
-
-```bash
-make build
-make test
-make install
-make clean
-```
 
 ## Release Automation
 
