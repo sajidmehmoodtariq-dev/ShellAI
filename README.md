@@ -25,24 +25,41 @@ It combines command search, templates, safety checks, optional LLM explanations,
  	- `shellai share`
  	- `shellai import`
 
-## Command Surface
+## Command Reference
 
-- `shellai run` - launch normal interactive usage.
-- `shellai add` - add custom commands.
-- `shellai share` - export user command entries.
-- `shellai import` - import command entries from file or URL.
-- `shellai update-db` - refresh installed command database for your platform.
-- `shellai upgrade` - upgrade ShellAI from GitHub Releases.
-- `shellai uninstall` - remove ShellAI from this machine.
-- `shellai stats` - review hit counts and never-matched commands.
-- `shellai explain` - force explanation mode.
-- `shellai llm install|remove|status` - manage LLM backend status.
+This is the full command surface currently available in ShellAI.
 
-Global flags include:
+Root:
 
-- `--dry-run`
-- `--no-confirm`
-- `--version`
+- `shellai` - launch the interactive UI (same behavior as `shellai run`)
+
+Core commands:
+
+- `shellai run [query]` - run interactive mode (optionally with a query)
+- `shellai add` - add custom commands
+- `shellai chain "<workflow>"` - run multi-step workflows with per-step confirmation and fail-fast behavior
+- `shellai share` - export custom commands
+- `shellai import <file-or-url>` - import commands from YAML/JSON source
+- `shellai explain` - open explanation flow for commands
+- `shellai stats` - show match stats and never-matched command entries
+
+Data/update lifecycle:
+
+- `shellai update-db` - refresh installed command database for current platform
+- `shellai upgrade` - self-update binary from releases (with checksum validation)
+- `shellai uninstall` - remove ShellAI from the machine
+
+LLM management:
+
+- `shellai llm install` - install/configure local LLM backend
+- `shellai llm remove` - remove configured LLM backend
+- `shellai llm status` - show current LLM backend status
+
+Common global flags:
+
+- `--dry-run` - show command/workflow steps without executing
+- `--no-confirm` - skip confirmation for safe commands only
+- `--version` - print version information
 
 ## Download and Install
 
@@ -205,6 +222,19 @@ Import commands:
 shellai import commands.yaml
 ```
 
+Run a multi-step workflow:
+
+```bash
+shellai chain "find all log files older than 7 days then compress them and then move them to archive folder"
+```
+
+Behavior:
+
+- Splits workflows on `then`, `and then`, and `after that`.
+- Resolves each step to a command independently.
+- Confirms each step before execution.
+- Stops immediately if any step fails (no blind execution of later steps).
+
 ## Configuration
 
 ShellAI reads config from:
@@ -277,6 +307,19 @@ Use this to review quality trends and zero-hit entries:
 ```bash
 shellai stats
 ```
+
+## Dry Run Impact Preview
+
+Before command execution, ShellAI shows an impact preview so you can see what will be affected.
+
+Examples:
+
+- `cp`/`mv`: matched source files and sizes
+- `find` + delete style flows: matched files that would be affected
+- `chmod`: files/directories that would receive permission changes
+
+The preview is read-only and uses standard Go filesystem inspection (`filepath.Walk`, `os.Stat`).
+Each command step still requires confirmation before execution.
 
 ## Uninstall
 

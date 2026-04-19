@@ -84,14 +84,14 @@ function Set-ConfigPlatform {
     New-Item -ItemType Directory -Path $dir -Force | Out-Null
 
     if (-not (Test-Path $ConfigPath)) {
-        "platform = `"$Platform`"" | Set-Content -Path $ConfigPath -Encoding UTF8
+        Write-Utf8NoBom -Path $ConfigPath -Text "platform = `"$Platform`""
         return
     }
 
     $content = Get-Content -Path $ConfigPath -Raw
     if ($content -match "(?m)^platform\s*=") {
         $updated = [regex]::Replace($content, "(?m)^platform\s*=.*$", "platform = `"$Platform`"")
-        Set-Content -Path $ConfigPath -Value $updated -Encoding UTF8
+        Write-Utf8NoBom -Path $ConfigPath -Text $updated
     } else {
         $trimmed = $content.TrimEnd("`r", "`n")
         if ([string]::IsNullOrWhiteSpace($trimmed)) {
@@ -99,8 +99,18 @@ function Set-ConfigPlatform {
         } else {
             $trimmed = "$trimmed`r`n`r`nplatform = `"$Platform`""
         }
-        Set-Content -Path $ConfigPath -Value $trimmed -Encoding UTF8
+        Write-Utf8NoBom -Path $ConfigPath -Text $trimmed
     }
+}
+
+function Write-Utf8NoBom {
+    param(
+        [string]$Path,
+        [string]$Text
+    )
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $Text, $utf8NoBom)
 }
 
 $arch = Resolve-Arch

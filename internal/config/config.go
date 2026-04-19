@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -58,6 +59,7 @@ func Load() (Config, error) {
 	// Load from config file if it exists
 	configPath := ConfigPath()
 	if data, err := os.ReadFile(configPath); err == nil {
+		data = sanitizeConfigData(data)
 		if err := toml.Unmarshal(data, &cfg); err != nil {
 			return Config{}, fmt.Errorf("parse config file: %w", err)
 		}
@@ -215,4 +217,14 @@ func (cfg *Config) MergeFlags(shell string, safetyLevel string, showAlts, dryRun
 	if llmModel != "" {
 		cfg.LLMModel = llmModel
 	}
+}
+
+func sanitizeConfigData(data []byte) []byte {
+	// Real UTF-8 BOM bytes.
+	data = bytes.TrimPrefix(data, []byte{0xEF, 0xBB, 0xBF})
+
+	// Mojibake form that sometimes appears when BOM bytes are decoded as text.
+	data = bytes.TrimPrefix(data, []byte("ï»¿"))
+
+	return data
 }

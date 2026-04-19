@@ -16,6 +16,7 @@ import (
 	"shellai/internal/config"
 	"shellai/internal/executor"
 	"shellai/internal/feedback"
+	"shellai/internal/impact"
 	"shellai/internal/llm"
 	"shellai/internal/parser"
 	"shellai/internal/safety"
@@ -90,6 +91,7 @@ type model struct {
 	missing    []string
 	manualVals map[string]string
 	safety     safety.Assessment
+	preview    []string
 	runOut     []string
 	runErr     []string
 	runDone    bool
@@ -543,12 +545,14 @@ func (m *model) rebuildSelection() {
 	m.finalCmd, m.missing = applyManualValues(m.build.Command, m.build.MissingPlaceholders, m.manualVals)
 	if len(m.missing) == 0 {
 		m.safety = safety.Analyze(m.finalCmd)
+		m.preview = impact.PreviewLines(m.finalCmd, 8)
 	} else {
 		m.safety = safety.Assessment{
 			Level:        safety.LevelWarning,
 			Confirmation: safety.ConfirmExplicit,
 			Reasons:      []string{"Some required command values are still missing."},
 		}
+		m.preview = nil
 	}
 }
 
@@ -713,6 +717,13 @@ func (m model) viewConfirm() string {
 		m.theme.Title.Render("Confirm"),
 		m.theme.Command.Render(m.finalCmd),
 		levelBox,
+	}
+
+	if len(m.preview) > 0 {
+		parts = append(parts,
+			m.theme.SectionTitle.Render("Impact Preview"),
+			m.theme.OutputPane.Render(strings.Join(m.preview, "\n")),
+		)
 	}
 
 	if len(m.missing) > 0 {

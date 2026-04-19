@@ -80,6 +80,7 @@ func init() {
 	// Add subcommands
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(addCmd)
+	rootCmd.AddCommand(chainCmd)
 	rootCmd.AddCommand(shareCmd)
 	rootCmd.AddCommand(importCmd)
 	rootCmd.AddCommand(updateDBCmd)
