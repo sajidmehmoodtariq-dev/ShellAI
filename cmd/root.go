@@ -8,7 +8,13 @@ import (
 	"shellai/internal/config"
 )
 
-const version = "0.1.0"
+// Build metadata - set at compile time via ldflags
+// Example: go build -ldflags "-X main.version=v0.1.0 -X main.commit=abc123 -X main.buildDate=2024-01-01"
+var (
+	version   = "dev"
+	commit    = "unknown"
+	buildDate = "unknown"
+)
 
 // Global config and flags
 var (
@@ -19,7 +25,6 @@ var (
 	globalDryRun    bool
 	globalNoConfirm bool
 	globalLLMModel  string
-	globalVersion   bool
 )
 
 // rootCmd is the base command for the entire application
@@ -52,11 +57,6 @@ var rootCmd = &cobra.Command{
 
 // runDefault runs the default TUI when no subcommand is specified
 func runDefault(cmd *cobra.Command, args []string) error {
-	if globalVersion {
-		fmt.Printf("shellai version %s\n", version)
-		return nil
-	}
-	
 	// This will be implemented to call the UI
 	return runDefaultTUI(cfg)
 }
@@ -74,7 +74,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&globalDryRun, "dry-run", false, "show command but do not execute")
 	rootCmd.PersistentFlags().BoolVar(&globalNoConfirm, "no-confirm", false, "skip confirmation for safe commands only")
 	rootCmd.PersistentFlags().StringVar(&globalLLMModel, "llm-model", "", "preferred LLM model (llamafile, ollama, or model name)")
-	rootCmd.Flags().BoolVarP(&globalVersion, "version", "v", false, "show version")
+	rootCmd.SetVersionTemplate("ShellAI {{.Version}}\n")
 
 	// Add subcommands
 	rootCmd.AddCommand(runCmd)
