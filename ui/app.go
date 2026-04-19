@@ -11,10 +11,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 
+	"shellai/internal/config"
 	"shellai/internal/executor"
 	"shellai/internal/llm"
 	"shellai/internal/parser"
-	"shellai/internal/platformdb"
 	"shellai/internal/safety"
 	"shellai/internal/search"
 )
@@ -107,8 +107,8 @@ func NewModel() (model, error) {
 
 	renderer, _ := glamour.NewTermRenderer(glamour.WithAutoStyle(), glamour.WithWordWrap(90))
 
-	userDB := platformdb.UserCommandsPath()
-	eng, err := search.NewEngineFromDatabases(platformdb.CoreCommandsPath(), userDB)
+	userDB := config.UserCommandsPath()
+	eng, err := search.NewEngineFromDatabases(config.CommandsPath(), userDB)
 	if err != nil {
 		return model{}, err
 	}

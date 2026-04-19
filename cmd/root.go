@@ -82,6 +82,7 @@ func init() {
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(shareCmd)
 	rootCmd.AddCommand(importCmd)
+	rootCmd.AddCommand(updateDBCmd)
 	rootCmd.AddCommand(explainCmd)
 	rootCmd.AddCommand(llmCmd)
 }

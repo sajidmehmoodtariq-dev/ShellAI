@@ -3,6 +3,7 @@ param(
     [string]$Repo = "sajidmehmoodtariq-dev/ShellAI",
     [string]$InstallDir = "",
     [string]$BaseUrl = "",
+    [string]$RawBaseUrl = "",
     [string]$ApiUrl = "",
     [switch]$DryRun
 )
@@ -41,6 +42,14 @@ if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
     }
 }
 
+if ([string]::IsNullOrWhiteSpace($RawBaseUrl)) {
+    if (-not [string]::IsNullOrWhiteSpace($env:SHELLAI_RAW_BASE_URL)) {
+        $RawBaseUrl = $env:SHELLAI_RAW_BASE_URL
+    } else {
+        $RawBaseUrl = "https://raw.githubusercontent.com/$Repo"
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($ApiUrl)) {
     if (-not [string]::IsNullOrWhiteSpace($env:SHELLAI_API_URL)) {
         $ApiUrl = $env:SHELLAI_API_URL
@@ -65,6 +74,35 @@ function Get-LatestVersion {
     return [string]$resp.tag_name
 }
 
+function Set-ConfigPlatform {
+    param(
+        [string]$ConfigPath,
+        [string]$Platform
+    )
+
+    $dir = Split-Path -Path $ConfigPath -Parent
+    New-Item -ItemType Directory -Path $dir -Force | Out-Null
+
+    if (-not (Test-Path $ConfigPath)) {
+        "platform = `"$Platform`"" | Set-Content -Path $ConfigPath -Encoding UTF8
+        return
+    }
+
+    $content = Get-Content -Path $ConfigPath -Raw
+    if ($content -match "(?m)^platform\s*=") {
+        $updated = [regex]::Replace($content, "(?m)^platform\s*=.*$", "platform = `"$Platform`"")
+        Set-Content -Path $ConfigPath -Value $updated -Encoding UTF8
+    } else {
+        $trimmed = $content.TrimEnd("`r", "`n")
+        if ([string]::IsNullOrWhiteSpace($trimmed)) {
+            $trimmed = "platform = `"$Platform`""
+        } else {
+            $trimmed = "$trimmed`r`n`r`nplatform = `"$Platform`""
+        }
+        Set-Content -Path $ConfigPath -Value $trimmed -Encoding UTF8
+    }
+}
+
 $arch = Resolve-Arch
 
 if ($Version -eq "latest") {
@@ -74,13 +112,19 @@ if ($Version -eq "latest") {
 
 $assetName = "shellai-$Version-windows-$arch.exe"
 $checksumName = "SHA256SUMS"
+$dbSourceName = "commands_windows.json"
 $assetUrl = "$BaseUrl/$Version/$assetName"
 $checksumUrl = "$BaseUrl/$Version/$checksumName"
+$dbUrl = "$RawBaseUrl/$Version/db/$dbSourceName"
+$configDir = Join-Path (Join-Path $env:USERPROFILE ".config") "shellai"
+$commandsPath = Join-Path $configDir "commands.json"
+$configPath = Join-Path $configDir "config.toml"
 
 Write-Host "ShellAI Windows installer"
 Write-Host "Version: $Version"
 Write-Host "Asset:   $assetUrl"
 Write-Host "Install: $InstallDir\shellai.exe"
+Write-Host "DB:      $commandsPath"
 
 if ($DryRun) {
     Write-Host "Dry-run mode enabled. Exiting before download."
@@ -93,9 +137,11 @@ New-Item -ItemType Directory -Path $tmpRoot -Force | Out-Null
 try {
     $assetPath = Join-Path $tmpRoot $assetName
     $checksumPath = Join-Path $tmpRoot $checksumName
+    $dbPath = Join-Path $tmpRoot $dbSourceName
 
     Invoke-WebRequest -Uri $assetUrl -OutFile $assetPath
     Invoke-WebRequest -Uri $checksumUrl -OutFile $checksumPath
+    Invoke-WebRequest -Uri $dbUrl -OutFile $dbPath
 
     $line = Select-String -Path $checksumPath -Pattern ([regex]::Escape($assetName)) | Select-Object -First 1
     if (-not $line) {
@@ -118,6 +164,10 @@ try {
     $destExe = Join-Path $InstallDir "shellai.exe"
     Copy-Item -Path $assetPath -Destination $destExe -Force
 
+    New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+    Copy-Item -Path $dbPath -Destination $commandsPath -Force
+    Set-ConfigPlatform -ConfigPath $configPath -Platform "windows"
+
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
     if ([string]::IsNullOrWhiteSpace($userPath)) {
         $userPath = ""
@@ -131,6 +181,7 @@ try {
     }
 
     Write-Host "Installed ShellAI to $destExe"
+    Write-Host "Installed command database to $commandsPath"
     & $destExe --version
 
     Write-Host ""

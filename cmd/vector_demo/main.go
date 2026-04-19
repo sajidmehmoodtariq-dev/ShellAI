@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"log"
 
+	"shellai/internal/config"
 	"shellai/internal/parser"
-	"shellai/internal/platformdb"
 	"shellai/internal/search"
 )
 
 func main() {
-	engine, err := search.NewEngineFromJSON(platformdb.CoreCommandsPath())
+	engine, err := search.NewEngineFromJSON(config.CommandsPath())
 	if err != nil {
 		log.Fatalf("failed to initialize vector search engine: %v", err)
 	}

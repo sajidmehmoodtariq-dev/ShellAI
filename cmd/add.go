@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"strings"
 
-	"shellai/internal/platformdb"
+	"shellai/internal/config"
 	"shellai/internal/search"
 
 	"gopkg.in/yaml.v3"
@@ -214,7 +214,7 @@ func openEditor(filePath string) error {
 }
 
 func userCommandsPath() string {
-	return platformdb.UserCommandsPath()
+	return config.UserCommandsPath()
 }
 
 func defaultYAMLTemplate() string {

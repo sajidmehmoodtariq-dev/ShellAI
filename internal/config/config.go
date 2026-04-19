@@ -32,6 +32,9 @@ type Config struct {
 
 	// NoConfirm - skip confirmation for safe commands only (default: false) - can be overridden by CLI
 	NoConfirm bool `toml:"no_confirm"`
+
+	// Platform - install-time platform identifier used for database updates (linux, mac, windows)
+	Platform string `toml:"platform"`
 }
 
 // DefaultConfig returns a Config with sensible defaults
@@ -44,6 +47,7 @@ func DefaultConfig() Config {
 		AutoConfirmSafe:    false,
 		DryRun:             false,
 		NoConfirm:          false,
+		Platform:           "",
 	}
 }
 
@@ -90,11 +94,29 @@ func ConfigPath() string {
 	if override := os.Getenv("SHELLAI_CONFIG_PATH"); override != "" {
 		return override
 	}
+	return filepath.Join(ConfigDir(), "config.toml")
+}
+
+// ConfigDir returns the directory containing ShellAI runtime/configuration files.
+func ConfigDir() string {
+	if override := os.Getenv("SHELLAI_CONFIG_DIR"); override != "" {
+		return override
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return ".shellai-config.toml" // fallback
+		return ".shellai" // fallback
 	}
-	return filepath.Join(home, ".config", "shellai", "config.toml")
+	return filepath.Join(home, ".config", "shellai")
+}
+
+// CommandsPath is the installed command database path used at runtime.
+func CommandsPath() string {
+	return filepath.Join(ConfigDir(), "commands.json")
+}
+
+// UserCommandsPath is the user-managed custom command database path.
+func UserCommandsPath() string {
+	return filepath.Join(ConfigDir(), "user_commands.json")
 }
 
 // EnsureConfigExists creates a default config file if it doesn't exist
@@ -165,6 +187,10 @@ dry_run = false
 # When enabled, commands below the confirmation threshold execute immediately
 # Only applies if they meet the safety criteria
 no_confirm = false
+
+# Install-time platform identity used by shellai update-db
+# Valid values: "linux", "mac", "windows"
+platform = ""
 `
 }
 

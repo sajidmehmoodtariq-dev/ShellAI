@@ -31,6 +31,7 @@ It combines command search, templates, safety checks, optional LLM explanations,
 - `shellai add` - add custom commands.
 - `shellai share` - export user command entries.
 - `shellai import` - import command entries from file or URL.
+- `shellai update-db` - refresh installed command database for your platform.
 - `shellai explain` - force explanation mode.
 - `shellai llm install|remove|status` - manage LLM backend status.
 
@@ -67,6 +68,8 @@ The installer:
 - Downloads the matching binary from GitHub Releases.
 - Verifies SHA256 checksum.
 - Installs to `/usr/local/bin` (or a fallback path if needed).
+- Downloads the platform command database and installs it as `~/.config/shellai/commands.json`.
+- Stores `platform = "linux"` or `platform = "mac"` in `~/.config/shellai/config.toml`.
 
 Notes:
 
@@ -99,6 +102,8 @@ The Windows installer:
 - Verifies against `SHA256SUMS`.
 - Installs to `%USERPROFILE%\\bin\\shellai.exe`.
 - Adds that directory to user PATH if missing.
+- Installs `%USERPROFILE%\\.config\\shellai\\commands.json`.
+- Stores `platform = "windows"` in `%USERPROFILE%\\.config\\shellai\\config.toml`.
 
 ### Option 3: Manual download from Releases
 
@@ -203,12 +208,28 @@ ShellAI reads config from:
 
 `~/.config/shellai/config.toml`
 
+ShellAI reads the command database from:
+
+`~/.config/shellai/commands.json`
+
 Config precedence:
 
 1. Environment variables
 2. CLI flags
 3. Config file
 4. Built-in defaults
+
+Update command database for your install platform:
+
+```bash
+shellai update-db
+```
+
+Pin to a specific release tag:
+
+```bash
+shellai update-db --version v0.1.4
+```
 
 ## Release Automation
 
