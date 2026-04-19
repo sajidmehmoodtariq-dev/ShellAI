@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/spf13/cobra"
 	"shellai/ui"
+
+	"github.com/spf13/cobra"
 )
 
 var runCmd = &cobra.Command{

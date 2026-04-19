@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	addFromStdin     bool
+	addFromStdin      bool
 	addGeneratePrompt bool
 )
 

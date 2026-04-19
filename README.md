@@ -45,7 +45,8 @@ Global flags include:
 ShellAI supports three ways to get started:
 
 1. One-line installer (Linux and macOS)
-2. Manual download from GitHub Releases (Linux and Windows)
+2. One-line installer (Windows PowerShell)
+3. Manual download from GitHub Releases (Linux and Windows)
 3. Build from source (Linux, macOS, and Windows)
 
 ### Option 1: One-line installer (Linux and macOS)
@@ -70,9 +71,30 @@ The installer:
 Notes:
 
 - The installer supports Linux and macOS style environments.
-- Windows users should use Option 2 or Option 3.
 
-### Option 2: Manual download from Releases
+### Option 2: One-line installer (Windows PowerShell)
+
+Run in PowerShell:
+
+```
+powershell -ExecutionPolicy Bypass -NoProfile -Command "iwr -useb https://raw.githubusercontent.com/sajidmehmoodtariq-dev/ShellAI/main/install.ps1 | iex"
+```
+
+Install a specific version:
+
+```
+powershell -ExecutionPolicy Bypass -NoProfile -Command "$env:SHELLAI_VERSION='v0.1.2'; iwr -useb https://raw.githubusercontent.com/sajidmehmoodtariq-dev/ShellAI/main/install.ps1 | iex"
+```
+
+The Windows installer:
+
+- Detects architecture (`amd64` or `arm64`).
+- Downloads `shellai-<version>-windows-<arch>.exe` from Releases.
+- Verifies against `SHA256SUMS`.
+- Installs to `%USERPROFILE%\\bin\\shellai.exe`.
+- Adds that directory to user PATH if missing.
+
+### Option 3: Manual download from Releases
 
 1. Open the GitHub Releases page for this repository.
 2. Download the binary that matches your platform.
@@ -110,7 +132,7 @@ Current release artifacts:
 - Linux arm64
 - Windows amd64
 
-### Option 3: Build from source (Linux/macOS/Windows)
+### Option 4: Build from source (Linux/macOS/Windows)
 
 Prerequisites:
 

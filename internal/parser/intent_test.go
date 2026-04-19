@@ -139,15 +139,15 @@ func TestParseIntentTable(t *testing.T) {
 			if got.Action != tc.expected.Action {
 				t.Fatalf("action mismatch: got %q want %q", got.Action, tc.expected.Action)
 			}
-				if tc.name == "move windows path" {
-					allowedTargets := map[string]bool{
-						"extension:app.log":           true,
-						"extension:c:\\temp\\app.log": true,
-					}
-					if !allowedTargets[got.Target] {
-						t.Fatalf("target mismatch: got %q want one of %q", got.Target, []string{"extension:app.log", "extension:c:\\temp\\app.log"})
-					}
-				} else if got.Target != tc.expected.Target {
+			if tc.name == "move windows path" {
+				allowedTargets := map[string]bool{
+					"extension:app.log":           true,
+					"extension:c:\\temp\\app.log": true,
+				}
+				if !allowedTargets[got.Target] {
+					t.Fatalf("target mismatch: got %q want one of %q", got.Target, []string{"extension:app.log", "extension:c:\\temp\\app.log"})
+				}
+			} else if got.Target != tc.expected.Target {
 				t.Fatalf("target mismatch: got %q want %q", got.Target, tc.expected.Target)
 			}
 			if got.Destination != tc.expected.Destination {

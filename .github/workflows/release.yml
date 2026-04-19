@@ -133,9 +133,50 @@ jobs:
             ubuntu:22.04 \
             bash -lc "apt-get update && apt-get install -y curl ca-certificates coreutils && curl -fsSL http://shellai-release-server:8000/install.sh | bash && /tmp/shellai-bin/shellai --version"
 
+  install-test-windows:
+    name: Test Windows Installer
+    needs: checksum
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: release-assets
+
+      - name: Prepare local release payload
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "test-release/${env:GITHUB_REF_NAME}" | Out-Null
+          Copy-Item "release-assets/*" "test-release/${env:GITHUB_REF_NAME}/" -Force
+
+      - name: Start local release server
+        shell: pwsh
+        run: |
+          $proc = Start-Process -FilePath python -ArgumentList "-m http.server 8000 --directory test-release" -PassThru
+          $proc.Id | Out-File -FilePath server.pid -Encoding ascii
+          Start-Sleep -Seconds 2
+
+      - name: Run installer
+        shell: pwsh
+        run: |
+          ./install.ps1 -Version "${env:GITHUB_REF_NAME}" -BaseUrl "http://127.0.0.1:8000" -InstallDir "$env:RUNNER_TEMP\\shellai-bin"
+          & "$env:RUNNER_TEMP\\shellai-bin\\shellai.exe" --version
+
+      - name: Stop local release server
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path server.pid) {
+            $pid = Get-Content server.pid | Select-Object -First 1
+            if ($pid) { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue }
+          }
+
   release:
     name: Create Release
-    needs: [test, checksum, install-test]
+    needs: [test, checksum, install-test, install-test-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write

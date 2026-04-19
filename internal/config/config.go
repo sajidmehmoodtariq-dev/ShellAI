@@ -100,7 +100,7 @@ func ConfigPath() string {
 // EnsureConfigExists creates a default config file if it doesn't exist
 func EnsureConfigExists() error {
 	configPath := ConfigPath()
-	
+
 	// Check if file already exists
 	if _, err := os.Stat(configPath); err == nil {
 		return nil // file exists

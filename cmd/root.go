@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"shellai/internal/config"
+
+	"github.com/spf13/cobra"
 )
 
 // Build metadata - set at compile time via ldflags
@@ -18,13 +19,13 @@ var (
 
 // Global config and flags
 var (
-	cfg             config.Config
-	globalShell     string
+	cfg               config.Config
+	globalShell       string
 	globalSafetyLevel string
-	globalShowAlts  bool
-	globalDryRun    bool
-	globalNoConfirm bool
-	globalLLMModel  string
+	globalShowAlts    bool
+	globalDryRun      bool
+	globalNoConfirm   bool
+	globalLLMModel    string
 )
 
 // rootCmd is the base command for the entire application
