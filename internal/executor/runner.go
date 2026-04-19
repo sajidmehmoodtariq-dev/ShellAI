@@ -8,8 +8,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 )
@@ -133,35 +131,4 @@ func exitCodeFromError(err error) int {
 		return exitErr.ExitCode()
 	}
 	return -1
-}
-
-func shellCommandArgs(command string) (string, []string) {
-	if runtime.GOOS == "windows" {
-		shell := os.Getenv("SHELL")
-		if shell == "" {
-			shell = "powershell.exe"
-		}
-
-		base := strings.ToLower(filepath.Base(shell))
-		if strings.Contains(base, "powershell") || strings.HasPrefix(base, "pwsh") {
-			return shell, []string{"-NoLogo", "-NoProfile", "-Command", command}
-		}
-		if strings.Contains(base, "cmd") {
-			return shell, []string{"/C", command}
-		}
-
-		return "powershell.exe", []string{"-NoLogo", "-NoProfile", "-Command", command}
-	}
-
-	shell := os.Getenv("SHELL")
-	if shell == "" {
-		shell = "/bin/sh"
-	}
-
-	base := strings.ToLower(filepath.Base(shell))
-	if base == "bash" || base == "zsh" || base == "fish" {
-		return shell, []string{"-ic", command}
-	}
-
-	return shell, []string{"-c", command}
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,6 +21,7 @@ type BuildResult struct {
 
 type TemplateEngine struct {
 	mediaRoot string
+	goos      string
 }
 
 var placeholderPattern = regexp.MustCompile(`\{([a-zA-Z0-9_]+)\}`)
@@ -27,11 +29,18 @@ var pathTokenPattern = regexp.MustCompile(`([a-zA-Z]:\\[^\s]+|/[^\s]+)`)
 var allFilesExtensionPattern = regexp.MustCompile(`\ball\s+([a-z0-9]+)\s+files\b`)
 
 func NewTemplateEngine() *TemplateEngine {
-	return &TemplateEngine{mediaRoot: "/media"}
+	return &TemplateEngine{mediaRoot: "/media", goos: runtime.GOOS}
 }
 
 func NewTemplateEngineWithMediaRoot(mediaRoot string) *TemplateEngine {
-	return &TemplateEngine{mediaRoot: mediaRoot}
+	return &TemplateEngine{mediaRoot: mediaRoot, goos: runtime.GOOS}
+}
+
+func NewTemplateEngineWithOS(mediaRoot, goos string) *TemplateEngine {
+	if strings.TrimSpace(goos) == "" {
+		goos = runtime.GOOS
+	}
+	return &TemplateEngine{mediaRoot: mediaRoot, goos: goos}
 }
 
 func (e *TemplateEngine) Build(template string, intent parser.ParsedIntent) BuildResult {
@@ -67,6 +76,9 @@ func (e *TemplateEngine) resolveValues(intent parser.ParsedIntent) (map[string]s
 	paths := extractPaths(intent.Raw)
 
 	if source := resolveSource(intent, paths); source != "" {
+		if e.goos == "windows" {
+			source = toWindowsPathToken(source)
+		}
 		values["source"] = source
 	}
 
@@ -83,6 +95,9 @@ func (e *TemplateEngine) resolveValues(intent parser.ParsedIntent) (map[string]s
 	}
 
 	if path := resolvePath(intent, paths); path != "" {
+		if e.goos == "windows" {
+			path = toWindowsPathToken(path)
+		}
 		values["path"] = path
 	}
 
@@ -138,11 +153,28 @@ func (e *TemplateEngine) resolveDestination(intent parser.ParsedIntent, paths []
 
 func (e *TemplateEngine) expandDestination(token string) (string, []string) {
 	lower := strings.ToLower(strings.TrimSpace(token))
+	if e.goos == "windows" {
+		switch lower {
+		case "desktop":
+			return "$HOME\\Desktop", nil
+		case "downloads":
+			return "$HOME\\Downloads", nil
+		case "documents":
+			return "$HOME\\Documents", nil
+		case "home":
+			return "$HOME", nil
+		default:
+			return toWindowsPathToken(token), nil
+		}
+	}
+
 	switch lower {
 	case "desktop":
 		return "~/Desktop", nil
 	case "downloads":
 		return "~/Downloads", nil
+	case "documents":
+		return "~/Documents", nil
 	case "home":
 		return "~", nil
 	case "usb":
@@ -184,6 +216,21 @@ func resolvePath(intent parser.ParsedIntent, paths []string) string {
 		return dst
 	}
 	return ""
+}
+
+func toWindowsPathToken(value string) string {
+	v := strings.TrimSpace(value)
+	if v == "" {
+		return ""
+	}
+	v = strings.ReplaceAll(v, "/", "\\")
+	if strings.HasPrefix(v, "~\\") {
+		return "$HOME" + strings.TrimPrefix(v, "~")
+	}
+	if v == "~" {
+		return "$HOME"
+	}
+	return v
 }
 
 func resolvePattern(intent parser.ParsedIntent) string {

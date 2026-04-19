@@ -10,7 +10,7 @@ import (
 )
 
 func TestBuildDesktopDestination(t *testing.T) {
-	engine := NewTemplateEngineWithMediaRoot(t.TempDir())
+	engine := NewTemplateEngineWithOS(t.TempDir(), "linux")
 	intent := parser.ParsedIntent{Raw: "copy /tmp/a.txt to desktop", Destination: "desktop"}
 
 	result := engine.Build("cp {source} {destination}", intent)
@@ -24,7 +24,7 @@ func TestBuildDesktopDestination(t *testing.T) {
 }
 
 func TestBuildDownloadsDestination(t *testing.T) {
-	engine := NewTemplateEngineWithMediaRoot(t.TempDir())
+	engine := NewTemplateEngineWithOS(t.TempDir(), "linux")
 	intent := parser.ParsedIntent{Raw: "move /tmp/a.txt to downloads", Destination: "downloads"}
 
 	result := engine.Build("mv {source} {destination}", intent)
@@ -34,7 +34,7 @@ func TestBuildDownloadsDestination(t *testing.T) {
 }
 
 func TestBuildHomeDestination(t *testing.T) {
-	engine := NewTemplateEngineWithMediaRoot(t.TempDir())
+	engine := NewTemplateEngineWithOS(t.TempDir(), "linux")
 	intent := parser.ParsedIntent{Raw: "move /tmp/a.txt to home", Destination: "home"}
 
 	result := engine.Build("mv {source} {destination}", intent)
@@ -49,7 +49,7 @@ func TestBuildUSBWithSingleMount(t *testing.T) {
 		t.Fatalf("failed to setup media root: %v", err)
 	}
 
-	engine := NewTemplateEngineWithMediaRoot(mediaRoot)
+	engine := NewTemplateEngineWithOS(mediaRoot, "linux")
 	intent := parser.ParsedIntent{Raw: "copy /tmp/a.txt to usb", Destination: "usb"}
 
 	result := engine.Build("cp {source} {destination}", intent)
@@ -68,7 +68,7 @@ func TestBuildUSBWithMultipleMountsNeedsPrompt(t *testing.T) {
 		t.Fatalf("failed to setup media root: %v", err)
 	}
 
-	engine := NewTemplateEngineWithMediaRoot(mediaRoot)
+	engine := NewTemplateEngineWithOS(mediaRoot, "linux")
 	intent := parser.ParsedIntent{Raw: "copy /tmp/a.txt to usb", Destination: "usb"}
 
 	result := engine.Build("cp {source} {destination}", intent)
@@ -82,7 +82,7 @@ func TestBuildUSBWithMultipleMountsNeedsPrompt(t *testing.T) {
 }
 
 func TestMissingSourceDoesNotGuess(t *testing.T) {
-	engine := NewTemplateEngineWithMediaRoot(t.TempDir())
+	engine := NewTemplateEngineWithOS(t.TempDir(), "linux")
 	intent := parser.ParsedIntent{Raw: "copy file to desktop", Destination: "desktop"}
 
 	result := engine.Build("cp {source} {destination}", intent)
@@ -95,7 +95,7 @@ func TestMissingSourceDoesNotGuess(t *testing.T) {
 }
 
 func TestPatternFromExtensionFilter(t *testing.T) {
-	engine := NewTemplateEngineWithMediaRoot(t.TempDir())
+	engine := NewTemplateEngineWithOS(t.TempDir(), "linux")
 	intent := parser.ParsedIntent{
 		Raw:     "find files with extension .jpg",
 		Filters: []parser.Filter{{Type: "extension", Value: ".jpg"}},
@@ -111,7 +111,7 @@ func TestPatternFromExtensionFilter(t *testing.T) {
 }
 
 func TestPatternFromAllFilesPhrase(t *testing.T) {
-	engine := NewTemplateEngineWithMediaRoot(t.TempDir())
+	engine := NewTemplateEngineWithOS(t.TempDir(), "linux")
 	intent := parser.ParsedIntent{Raw: "find all jpg files in /tmp"}
 
 	result := engine.Build("find {path} -name \"{pattern}\"", intent)
@@ -121,7 +121,7 @@ func TestPatternFromAllFilesPhrase(t *testing.T) {
 }
 
 func TestTimeFilterFromOlderThanDays(t *testing.T) {
-	engine := NewTemplateEngineWithMediaRoot(t.TempDir())
+	engine := NewTemplateEngineWithOS(t.TempDir(), "linux")
 	intent := parser.ParsedIntent{
 		Raw:     "find files older than 7 days in /var/log",
 		Filters: []parser.Filter{{Type: "older_than", Value: "7 days"}},
@@ -134,7 +134,7 @@ func TestTimeFilterFromOlderThanDays(t *testing.T) {
 }
 
 func TestTimeFilterFromOlderThanShort(t *testing.T) {
-	engine := NewTemplateEngineWithMediaRoot(t.TempDir())
+	engine := NewTemplateEngineWithOS(t.TempDir(), "linux")
 	intent := parser.ParsedIntent{
 		Raw:     "find files older than 10d in /var/log",
 		Filters: []parser.Filter{{Type: "older_than", Value: "10d"}},
@@ -147,7 +147,7 @@ func TestTimeFilterFromOlderThanShort(t *testing.T) {
 }
 
 func TestContainingFilterValue(t *testing.T) {
-	engine := NewTemplateEngineWithMediaRoot(t.TempDir())
+	engine := NewTemplateEngineWithOS(t.TempDir(), "linux")
 	intent := parser.ParsedIntent{
 		Raw:     "list files containing invoice",
 		Filters: []parser.Filter{{Type: "containing", Value: "invoice"}},
@@ -163,7 +163,7 @@ func TestContainingFilterValue(t *testing.T) {
 }
 
 func TestUnknownPlaceholderIsMarkedMissing(t *testing.T) {
-	engine := NewTemplateEngineWithMediaRoot(t.TempDir())
+	engine := NewTemplateEngineWithOS(t.TempDir(), "linux")
 	intent := parser.ParsedIntent{Raw: "show processes", Target: "processes"}
 
 	result := engine.Build("do {target} with {extra}", intent)
