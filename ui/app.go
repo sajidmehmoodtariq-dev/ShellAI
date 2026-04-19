@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -107,7 +108,9 @@ func NewModel() (model, error) {
 
 	renderer, _ := glamour.NewTermRenderer(glamour.WithAutoStyle(), glamour.WithWordWrap(90))
 
-	eng, err := search.NewEngineFromJSON(filepath.Join("db", "commands.json"))
+	home, _ := os.UserHomeDir()
+	userDB := filepath.Join(home, ".config", "shellai", "user_commands.json")
+	eng, err := search.NewEngineFromDatabases(filepath.Join("db", "commands.json"), userDB)
 	if err != nil {
 		return model{}, err
 	}
@@ -241,7 +244,7 @@ func (m model) updateResult(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch key.String() {
 	case "1", "2", "3":
-		idx := int(key.String()[0]-'1')
+		idx := int(key.String()[0] - '1')
 		if idx >= 0 && idx < len(m.matches) {
 			m.selected = idx
 			m.manualVals = map[string]string{}
@@ -496,7 +499,7 @@ func (m model) viewInput() string {
 func (m model) viewSearching() string {
 	return strings.Join([]string{
 		m.theme.Title.Render("Searching"),
-		m.theme.Spinner.Render(m.spinner.View()+" Matching command templates..."),
+		m.theme.Spinner.Render(m.spinner.View() + " Matching command templates..."),
 		m.theme.Dim.Render("Query: " + m.query),
 	}, "\n")
 }

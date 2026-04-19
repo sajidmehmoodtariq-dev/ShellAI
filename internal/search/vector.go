@@ -2,6 +2,7 @@ package search
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -13,18 +14,18 @@ import (
 )
 
 type CommandFlag struct {
-	Flag        string `json:"flag"`
-	Description string `json:"description"`
+	Flag        string `json:"flag" yaml:"flag"`
+	Description string `json:"description" yaml:"description"`
 }
 
 type CommandEntry struct {
-	Intent          string        `json:"intent"`
-	Keywords        []string      `json:"keywords"`
-	CommandTemplate string        `json:"command_template"`
-	Explanation     string        `json:"explanation"`
-	Flags           []CommandFlag `json:"flags"`
-	Danger          bool          `json:"danger"`
-	Platform        string        `json:"platform"`
+	Intent          string        `json:"intent" yaml:"intent"`
+	Keywords        []string      `json:"keywords" yaml:"keywords"`
+	CommandTemplate string        `json:"command_template" yaml:"command_template"`
+	Explanation     string        `json:"explanation" yaml:"explanation"`
+	Flags           []CommandFlag `json:"flags" yaml:"flags"`
+	Danger          bool          `json:"danger" yaml:"danger"`
+	Platform        string        `json:"platform" yaml:"platform"`
 }
 
 type ScoredMatch struct {
@@ -43,17 +44,76 @@ var nonWordPattern = regexp.MustCompile(`[^a-z0-9]+`)
 var whitespacePattern = regexp.MustCompile(`\s+`)
 
 func NewEngineFromJSON(path string) (*Engine, error) {
+	entries, err := LoadEntriesFromJSON(path)
+	if err != nil {
+		return nil, err
+	}
+	return NewEngine(entries), nil
+}
+
+func NewEngineFromDatabases(corePath, userPath string) (*Engine, error) {
+	core, err := LoadEntriesFromJSON(corePath)
+	if err != nil {
+		return nil, err
+	}
+	user, err := LoadEntriesFromJSON(userPath)
+	if err != nil {
+		return nil, err
+	}
+	return NewEngine(MergeEntriesByIntent(core, user)), nil
+}
+
+func LoadEntriesFromJSON(path string) ([]CommandEntry, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("read commands database: %w", err)
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("read commands database %s: %w", path, err)
+	}
+
+	if strings.TrimSpace(string(data)) == "" {
+		return nil, nil
 	}
 
 	var entries []CommandEntry
 	if err := json.Unmarshal(data, &entries); err != nil {
-		return nil, fmt.Errorf("parse commands database: %w", err)
+		return nil, fmt.Errorf("parse commands database %s: %w", path, err)
+	}
+	return entries, nil
+}
+
+func MergeEntriesByIntent(core, user []CommandEntry) []CommandEntry {
+	merged := make([]CommandEntry, 0, len(core)+len(user))
+	index := make(map[string]int)
+
+	for _, entry := range core {
+		key := normalizeIntentKey(entry.Intent)
+		if key == "" {
+			continue
+		}
+		index[key] = len(merged)
+		merged = append(merged, entry)
 	}
 
-	return NewEngine(entries), nil
+	for _, entry := range user {
+		key := normalizeIntentKey(entry.Intent)
+		if key == "" {
+			continue
+		}
+		if idx, ok := index[key]; ok {
+			merged[idx] = entry
+			continue
+		}
+		index[key] = len(merged)
+		merged = append(merged, entry)
+	}
+
+	return merged
+}
+
+func normalizeIntentKey(intent string) string {
+	return strings.ToLower(strings.TrimSpace(intent))
 }
 
 func NewEngine(entries []CommandEntry) *Engine {
