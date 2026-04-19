@@ -97,7 +97,12 @@ func parseAndValidateEntry(data []byte) (search.CommandEntry, []string) {
 	if err := yaml.Unmarshal(data, &entry); err != nil {
 		return search.CommandEntry{}, []string{fmt.Sprintf("invalid YAML: %v", err)}
 	}
+	entry = normalizeEntry(entry)
+	problems := validateEntry(entry)
+	return entry, problems
+}
 
+func normalizeEntry(entry search.CommandEntry) search.CommandEntry {
 	entry.Intent = strings.TrimSpace(entry.Intent)
 	entry.CommandTemplate = strings.TrimSpace(entry.CommandTemplate)
 	entry.Explanation = strings.TrimSpace(entry.Explanation)
@@ -117,8 +122,7 @@ func parseAndValidateEntry(data []byte) (search.CommandEntry, []string) {
 		entry.Flags[i].Description = strings.TrimSpace(entry.Flags[i].Description)
 	}
 
-	problems := validateEntry(entry)
-	return entry, problems
+	return entry
 }
 
 func validateEntry(entry search.CommandEntry) []string {
@@ -221,18 +225,18 @@ func defaultYAMLTemplate() string {
 intent: "Describe what the user wants in plain English"
 
 keywords:
-	- "how users might ask this"
-	- "another common variation"
+  - "how users might ask this"
+  - "another common variation"
 
 command_template: "command with placeholders like {source} {destination}"
 
 explanation: "One sentence explaining what this command does"
 
 flags:
-	- flag: "-i"
-		description: "Prompt before overwrite"
-	- flag: "-v"
-		description: "Verbose output"
+  - flag: "-i"
+    description: "Prompt before overwrite"
+  - flag: "-v"
+    description: "Verbose output"
 
 danger: false
 

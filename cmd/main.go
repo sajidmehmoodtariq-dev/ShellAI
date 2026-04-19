@@ -16,6 +16,18 @@ func main() {
 				os.Exit(1)
 			}
 			return
+		case "share":
+			if err := runShare(os.Args[2:]); err != nil {
+				fmt.Fprintf(os.Stderr, "shellai share: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		case "import":
+			if err := runImport(os.Args[2:]); err != nil {
+				fmt.Fprintf(os.Stderr, "shellai import: %v\n", err)
+				os.Exit(1)
+			}
+			return
 		}
 	}
 
