@@ -38,6 +38,7 @@ type Engine struct {
 	vectors  []map[string]float64
 	idf      map[string]float64
 	vecNorms []float64
+	postings map[string][]int
 }
 
 var nonWordPattern = regexp.MustCompile(`[^a-z0-9]+`)
@@ -119,6 +120,7 @@ func normalizeIntentKey(intent string) string {
 func NewEngine(entries []CommandEntry) *Engine {
 	docTF := make([]map[string]float64, len(entries))
 	docFreq := make(map[string]int)
+	postings := make(map[string][]int)
 
 	for i, entry := range entries {
 		text := entryToSearchText(entry)
@@ -132,6 +134,7 @@ func NewEngine(entries []CommandEntry) *Engine {
 			}
 			seen[token] = struct{}{}
 			docFreq[token]++
+			postings[token] = append(postings[token], i)
 		}
 	}
 
@@ -160,6 +163,7 @@ func NewEngine(entries []CommandEntry) *Engine {
 		vectors:  vectors,
 		idf:      idf,
 		vecNorms: vecNorms,
+		postings: postings,
 	}
 }
 
@@ -174,8 +178,14 @@ func (e *Engine) Search(intent parser.ParsedIntent, topK int) []ScoredMatch {
 		return nil
 	}
 
-	results := make([]ScoredMatch, 0, len(e.entries))
-	for i, docVec := range e.vectors {
+	candidates := e.candidateDocIDs(queryVec)
+	if len(candidates) == 0 {
+		return nil
+	}
+
+	results := make([]ScoredMatch, 0, len(candidates))
+	for _, i := range candidates {
+		docVec := e.vectors[i]
 		docNorm := e.vecNorms[i]
 		if docNorm == 0 {
 			continue
@@ -206,6 +216,30 @@ func (e *Engine) Search(intent parser.ParsedIntent, topK int) []ScoredMatch {
 	}
 
 	return results[:topK]
+}
+
+func (e *Engine) candidateDocIDs(queryVec map[string]float64) []int {
+	if len(queryVec) == 0 {
+		return nil
+	}
+
+	seen := make(map[int]struct{})
+	candidates := make([]int, 0)
+	for token := range queryVec {
+		docs, ok := e.postings[token]
+		if !ok {
+			continue
+		}
+		for _, id := range docs {
+			if _, already := seen[id]; already {
+				continue
+			}
+			seen[id] = struct{}{}
+			candidates = append(candidates, id)
+		}
+	}
+
+	return candidates
 }
 
 func IntentToQuery(intent parser.ParsedIntent) string {

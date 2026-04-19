@@ -132,6 +132,10 @@ try {
 
     Write-Host "Installed ShellAI to $destExe"
     & $destExe --version
+
+    Write-Host ""
+    Write-Host "If 'shellai' is not recognized in your current terminal, open a new PowerShell window."
+    Write-Host "You can always run it directly with: $destExe"
 } finally {
     Remove-Item -Path $tmpRoot -Recurse -Force -ErrorAction SilentlyContinue
 }

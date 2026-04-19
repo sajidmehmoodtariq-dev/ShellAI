@@ -77,13 +77,19 @@ Notes:
 Run in PowerShell:
 
 ```
-powershell -ExecutionPolicy Bypass -NoProfile -Command "iwr -useb https://raw.githubusercontent.com/sajidmehmoodtariq-dev/ShellAI/main/install.ps1 | iex"
+iwr -useb https://raw.githubusercontent.com/sajidmehmoodtariq-dev/ShellAI/main/install.ps1 | iex
 ```
 
 Install a specific version:
 
 ```
-powershell -ExecutionPolicy Bypass -NoProfile -Command "$env:SHELLAI_VERSION='v0.1.2'; iwr -useb https://raw.githubusercontent.com/sajidmehmoodtariq-dev/ShellAI/main/install.ps1 | iex"
+$env:SHELLAI_VERSION='v0.1.4'; iwr -useb https://raw.githubusercontent.com/sajidmehmoodtariq-dev/ShellAI/main/install.ps1 | iex
+```
+
+If `shellai` is not recognized immediately, open a new terminal and run:
+
+```
+shellai --version
 ```
 
 The Windows installer:
