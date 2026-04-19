@@ -1,115 +1,173 @@
 # ShellAI
 
-ShellAI is an AI-assisted shell command helper with a terminal UI, safety checks, custom command support, import/export, and release packaging.
+ShellAI is a CLI and terminal UI assistant that helps you find, understand, and safely run shell commands.
 
-## Current Distribution Status
+It combines command search, templates, safety checks, optional LLM explanations, and user-defined command packs so you can move faster in the terminal without giving up control.
 
-Yes, this is distributable.
+## Why ShellAI
 
-The repo now includes:
+- Turn plain-English intent into executable shell commands.
+- Run commands with a built-in safety layer that flags risky operations.
+- Add your own commands and share them with others.
+- Import command packs from local files or URLs.
+- Use an interactive TUI or subcommands directly.
 
-- A Makefile for build, test, install, clean, and checksums.
-- An installer script that supports curl-pipe-bash installs.
-- A GitHub Actions release workflow that:
-	- runs tests before build,
-	- builds Linux binaries for amd64 and arm64,
-	- generates SHA256SUMS,
-	- tests the installer in a fresh container,
-	- publishes release assets on version tags.
+## Core Features
 
-Current published binary targets are Linux amd64 and Linux arm64.
+- Intent search engine for command discovery.
+- Template placeholder resolution.
+- Safety guard with safe, warning, and dangerous levels.
+- Streaming command execution.
+- Optional LLM explanation mode.
+- Bubble Tea based terminal UI.
+- Custom command management:
+	- `shellai add`
+	- `shellai share`
+	- `shellai import`
 
-## Requirements
+## Command Surface
 
-- Go 1.26.2+
-- bash and curl for installer usage
-- sha256sum or shasum for checksum verification
+- `shellai run` - launch normal interactive usage.
+- `shellai add` - add custom commands.
+- `shellai share` - export user command entries.
+- `shellai import` - import command entries from file or URL.
+- `shellai explain` - force explanation mode.
+- `shellai llm install|remove|status` - manage LLM backend status.
 
-## Build Locally
+Global flags include:
 
-Build for your current platform:
+- `--dry-run`
+- `--no-confirm`
+- `--version`
 
-```bash
-make build
-```
+## Download and Install
 
-Build release binaries (Linux amd64 and arm64):
-
-```bash
-make build-all
-```
-
-Run tests:
-
-```bash
-make test
-```
-
-Generate checksums:
+### Option 1: One-line installer (recommended)
 
 ```bash
-make checksums
+curl -fsSL https://raw.githubusercontent.com/sajidmehmoodtariq-dev/ShellAI/main/install.sh | bash
 ```
 
-## Install Locally
-
-Install the built binary to /usr/local/bin:
+Install a specific version:
 
 ```bash
-make install
+curl -fsSL https://raw.githubusercontent.com/sajidmehmoodtariq-dev/ShellAI/main/install.sh | SHELLAI_VERSION=v0.1.0 bash
 ```
 
-## Install from GitHub Releases
+The installer:
 
-If this project is hosted in OWNER/REPO, install with:
+- Detects OS and architecture.
+- Downloads the matching binary from GitHub Releases.
+- Verifies SHA256 checksum.
+- Installs to `/usr/local/bin` (or a fallback path if needed).
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/install.sh | SHELLAI_REPO=OWNER/REPO bash
-```
+### Option 2: Manual download from Releases
 
-Optional installer environment variables:
-
-- SHELLAI_REPO: GitHub repo in owner/name format.
-- SHELLAI_VERSION: release tag, for example v0.1.0 (default is latest).
-- SHELLAI_INSTALL_DIR: override install target directory.
-- SHELLAI_BASE_URL: override release download base URL.
-- SHELLAI_API_URL: override latest-release API URL.
-
-Example pinned install:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/install.sh | SHELLAI_REPO=OWNER/REPO SHELLAI_VERSION=v0.1.0 bash
-```
-
-## Release Process
-
-1. Ensure tests are green locally.
-2. Commit changes.
-3. Create and push a release tag.
-
-```bash
-git tag -a v0.1.0 -m "ShellAI v0.1.0"
-git push origin main --tags
-```
-
-On tag push, GitHub Actions will:
-
-1. Run test and vet checks.
-2. Build Linux amd64 and arm64 binaries.
-3. Generate SHA256SUMS.
-4. Validate the installer in a clean Ubuntu container.
-5. Publish GitHub Release assets.
-
-## Verify Downloads Manually
-
-After downloading release assets:
+1. Open the GitHub Releases page for this repository.
+2. Download the binary that matches your platform.
+3. Download `SHA256SUMS`.
+4. Verify:
 
 ```bash
 sha256sum -c SHA256SUMS
 ```
 
-## Notes
+5. Install:
 
-- The Makefile is intended for Unix-like environments.
-- On Windows, use go build directly or run make from WSL/Git Bash.
-- The install script currently targets Linux and macOS style environments.
+```bash
+chmod +x shellai-<version>-linux-<arch>
+sudo mv shellai-<version>-linux-<arch> /usr/local/bin/shellai
+```
+
+6. Verify installation:
+
+```bash
+shellai --version
+```
+
+## Supported Release Platforms
+
+- Linux amd64
+- Linux arm64
+
+## Quick Start
+
+Launch interactive mode:
+
+```bash
+shellai run
+```
+
+Add your first custom command:
+
+```bash
+shellai add
+```
+
+Share your command pack:
+
+```bash
+shellai share --format yaml --output commands.yaml
+```
+
+Import commands:
+
+```bash
+shellai import commands.yaml
+```
+
+## Configuration
+
+ShellAI reads config from:
+
+`~/.config/shellai/config.toml`
+
+Config precedence:
+
+1. Environment variables
+2. CLI flags
+3. Config file
+4. Built-in defaults
+
+## Build From Source
+
+Prerequisites:
+
+- Go 1.26.2+
+
+Build:
+
+```bash
+go build -o shellai ./cmd
+```
+
+Run tests:
+
+```bash
+go test ./...
+```
+
+If you use `make`, helper targets are available:
+
+```bash
+make build
+make test
+make install
+make clean
+```
+
+## Release Automation
+
+GitHub Actions is configured to run on tagged releases.
+
+On `v*` tags, it will:
+
+1. Run test and vet checks.
+2. Build Linux binaries (amd64 and arm64).
+3. Generate checksums.
+4. Validate installer flow.
+5. Publish release assets.
+
+## Project Status
+
+Active development. The current release line starts at `v0.1.x`.
