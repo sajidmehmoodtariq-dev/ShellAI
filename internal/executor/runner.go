@@ -116,7 +116,7 @@ func streamPipe(pipe io.Reader, builder *strings.Builder, callback func(StreamEv
 		}
 	}
 
-	if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) {
+	if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, os.ErrClosed) {
 		return err
 	}
 	return nil
