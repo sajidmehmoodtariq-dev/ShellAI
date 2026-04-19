@@ -42,6 +42,13 @@ type Engine struct {
 	cache    *resultCache
 }
 
+func (e *Engine) EntryCount() int {
+	if e == nil {
+		return 0
+	}
+	return len(e.entries)
+}
+
 var nonWordPattern = regexp.MustCompile(`[^a-z0-9]+`)
 var whitespacePattern = regexp.MustCompile(`\s+`)
 

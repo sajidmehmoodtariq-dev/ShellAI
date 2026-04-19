@@ -32,6 +32,7 @@ It combines command search, templates, safety checks, optional LLM explanations,
 - `shellai share` - export user command entries.
 - `shellai import` - import command entries from file or URL.
 - `shellai update-db` - refresh installed command database for your platform.
+- `shellai uninstall` - remove ShellAI from this machine.
 - `shellai stats` - review hit counts and never-matched commands.
 - `shellai explain` - force explanation mode.
 - `shellai llm install|remove|status` - manage LLM backend status.
@@ -257,6 +258,32 @@ Use this to review quality trends and zero-hit entries:
 ```bash
 shellai stats
 ```
+
+## Uninstall
+
+ShellAI includes a built-in uninstall command for all platforms:
+
+```bash
+shellai uninstall
+```
+
+Skip the confirmation prompt:
+
+```bash
+shellai uninstall --yes
+```
+
+Keep your local data (commands and config):
+
+```bash
+shellai uninstall --keep-config --yes
+```
+
+Platform behavior:
+
+- Linux: removes the current ShellAI binary and optionally `~/.config/shellai`.
+- macOS: removes the current ShellAI binary and optionally `~/.config/shellai`.
+- Windows: schedules removal of the current executable and optionally `%USERPROFILE%\.config\shellai`.
 
 ## Release Automation
 

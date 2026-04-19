@@ -3,6 +3,8 @@ package ui
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -23,13 +25,19 @@ import (
 type appState int
 
 const (
-	stateInput appState = iota
+	stateWelcome appState = iota
+	stateInput
 	stateSearching
 	stateResult
 	stateConfirm
 	stateRunning
 	stateExplain
 )
+
+type searchProgressMsg struct {
+	text string
+	ch   <-chan tea.Msg
+}
 
 type searchDoneMsg struct {
 	intent  parser.ParsedIntent
@@ -51,6 +59,12 @@ type runDoneMsg struct {
 
 type explainTokenMsg struct{ token string }
 type explainDoneMsg struct{ err error }
+
+var welcomeExamples = []string{
+	"copy files to usb",
+	"find logs older than 7 days",
+	"create a tar archive from project folder",
+}
 
 type model struct {
 	state      appState
@@ -81,19 +95,28 @@ type model struct {
 	runDone    bool
 	runStatus  string
 	runCh      chan tea.Msg
+	runScroll  int
 	feedback   *feedback.Store
 	explainRaw string
 	explainMD  string
 	explainEnd bool
 	explainErr string
 	explainCh  chan tea.Msg
+
+	searchStatus    string
+	inputSignal     string
+	welcomeIndex    int
+	llmAvailable    bool
+	commandCount    int
+	supportsColor   bool
+	supportsUnicode bool
 }
 
 var unresolvedPlaceholder = regexp.MustCompile(`\{([a-zA-Z0-9_]+)\}`)
 
 func NewModel() (model, error) {
 	sp := spinner.New()
-	sp.Spinner = spinner.Dot
+	sp.Spinner = spinner.MiniDot
 
 	in := textinput.New()
 	in.Placeholder = "Describe what you want to do, then press Enter"
@@ -108,6 +131,11 @@ func NewModel() (model, error) {
 	cf.Width = 60
 
 	renderer, _ := glamour.NewTermRenderer(glamour.WithAutoStyle(), glamour.WithWordWrap(90))
+	supportsColor := strings.TrimSpace(os.Getenv("NO_COLOR")) == ""
+	supportsUnicode := strings.ToLower(strings.TrimSpace(os.Getenv("TERM"))) != "dumb"
+	if !supportsUnicode {
+		sp.Spinner = spinner.Line
+	}
 
 	userDB := config.UserCommandsPath()
 	eng, err := search.NewEngineFromDatabases(config.CommandsPath(), userDB)
@@ -117,22 +145,34 @@ func NewModel() (model, error) {
 
 	explainer, err := llm.NewExplainer(context.Background(), llm.AutoOptions{})
 	if err != nil {
-		return model{}, err
+		explainer = &llm.FallbackExplainer{}
+	}
+	llmAvailable := explainer.ProviderName() != "fallback"
+
+	startState := stateInput
+	if shouldShowWelcome() {
+		startState = stateWelcome
 	}
 
 	return model{
-		state:      stateInput,
-		theme:      NewTheme(),
-		spinner:    sp,
-		input:      in,
-		confirm:    cf,
-		search:     eng,
-		tmpl:       executor.NewTemplateEngine(),
-		runner:     executor.NewRunner(),
-		feedback:   feedback.NewStore(),
-		explainer:  explainer,
-		markdown:   renderer,
-		manualVals: map[string]string{},
+		state:           startState,
+		theme:           NewTheme(),
+		spinner:         sp,
+		input:           in,
+		confirm:         cf,
+		search:          eng,
+		tmpl:            executor.NewTemplateEngine(),
+		runner:          executor.NewRunner(),
+		feedback:        feedback.NewStore(),
+		explainer:       explainer,
+		markdown:        renderer,
+		manualVals:      map[string]string{},
+		searchStatus:    "Ready",
+		inputSignal:     "neutral",
+		llmAvailable:    llmAvailable,
+		commandCount:    eng.EntryCount(),
+		supportsColor:   supportsColor,
+		supportsUnicode: supportsUnicode,
 	}, nil
 }
 
@@ -147,6 +187,9 @@ func Run() error {
 }
 
 func (m model) Init() tea.Cmd {
+	if m.state == stateSearching {
+		return tea.Batch(textinput.Blink, m.spinner.Tick)
+	}
 	return textinput.Blink
 }
 
@@ -175,6 +218,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch m.state {
+	case stateWelcome:
+		return m.updateWelcome(msg)
 	case stateInput:
 		return m.updateInput(msg)
 	case stateSearching:
@@ -195,6 +240,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) updateInput(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
+	m.inputSignal = inferInputSignal(m.input.Value())
 
 	if key, ok := msg.(tea.KeyMsg); ok {
 		if key.String() == "enter" {
@@ -205,15 +251,51 @@ func (m model) updateInput(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.errText = ""
 			m.query = query
 			m.state = stateSearching
-			return m, tea.Batch(m.spinner.Tick, searchCmd(m.search, query))
+			m.searchStatus = "parsing intent"
+			return m, tea.Batch(m.spinner.Tick, startSearchCmd(m.search, query))
 		}
 	}
 
 	return m, cmd
 }
 
+func (m model) updateWelcome(msg tea.Msg) (tea.Model, tea.Cmd) {
+	key, ok := msg.(tea.KeyMsg)
+	if !ok {
+		return m, nil
+	}
+
+	switch key.String() {
+	case "up", "k":
+		if m.welcomeIndex > 0 {
+			m.welcomeIndex--
+		}
+	case "down", "j":
+		if m.welcomeIndex < len(welcomeExamples)-1 {
+			m.welcomeIndex++
+		}
+	case "enter":
+		if len(welcomeExamples) > 0 {
+			m.input.SetValue(welcomeExamples[m.welcomeIndex])
+		}
+		_ = markWelcomeSeen()
+		m.state = stateInput
+		m.input.Focus()
+	case "esc":
+		_ = markWelcomeSeen()
+		m.state = stateInput
+		m.input.Focus()
+	}
+
+	return m, nil
+}
+
 func (m model) updateSearching(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case searchProgressMsg:
+		m.searchStatus = msg.text
+		return m, waitForChan(msg.ch)
+
 	case searchDoneMsg:
 		if err := m.feedback.RecordMatches(msg.matches); err != nil {
 			m.errText = err.Error()
@@ -228,6 +310,7 @@ func (m model) updateSearching(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.selected = 0
 		m.manualVals = map[string]string{}
 		m.rebuildSelection()
+		m.searchStatus = "ready"
 		m.state = stateResult
 		return m, nil
 
@@ -327,13 +410,20 @@ func (m model) updateConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.runOut = nil
 		m.runErr = nil
 		m.runDone = false
+		m.runScroll = 0
 		m.runStatus = "Running command..."
 		m.state = stateRunning
 		m.runCh = make(chan tea.Msg, 512)
 		return m, tea.Batch(startRunCmd(m.runner, m.finalCmd, m.runCh), waitForChan(m.runCh))
 
 	case "n", "esc":
-		m.state = stateResult
+		if m.safety.Level == safety.LevelDangerous {
+			m.state = stateResult
+		} else {
+			m.state = stateInput
+			m.input.SetValue(m.query)
+			m.input.Focus()
+		}
 		m.confirm.SetValue("")
 		return m, nil
 
@@ -372,6 +462,27 @@ func (m model) updateRunning(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		total := len(m.runOut) + len(m.runErr)
+		maxScroll := max(0, total-1)
+		switch msg.String() {
+		case "up", "k":
+			if m.runScroll > 0 {
+				m.runScroll--
+			}
+			return m, nil
+		case "down", "j":
+			if m.runScroll < maxScroll {
+				m.runScroll++
+			}
+			return m, nil
+		case "pgup":
+			m.runScroll = max(0, m.runScroll-8)
+			return m, nil
+		case "pgdown":
+			m.runScroll = min(maxScroll, m.runScroll+8)
+			return m, nil
+		}
+
 		if !m.runDone {
 			return m, nil
 		}
@@ -485,6 +596,8 @@ func (m *model) refreshRenderer() {
 func (m model) View() string {
 	var body string
 	switch m.state {
+	case stateWelcome:
+		body = m.viewWelcome()
 	case stateInput:
 		body = m.viewInput()
 	case stateSearching:
@@ -498,16 +611,27 @@ func (m model) View() string {
 	case stateExplain:
 		body = m.viewExplain()
 	}
-	return m.theme.App.Render(body)
+	renderedBody := m.theme.App.Render(body)
+	status := m.renderStatusBar()
+	if m.height <= 0 {
+		return renderedBody + "\n" + status
+	}
+	bodyLines := strings.Count(renderedBody, "\n") + 1
+	fill := m.height - bodyLines - 1
+	if fill < 0 {
+		fill = 0
+	}
+	return renderedBody + strings.Repeat("\n", fill) + "\n" + status
 }
 
 func (m model) viewInput() string {
+	promptBox := m.renderPromptBox()
 	parts := []string{
 		m.theme.Title.Render("ShellAI"),
 		m.theme.Subtitle.Render("Intent-first shell assistant"),
 		"",
 		m.theme.InputLabel.Render("Input"),
-		m.input.View(),
+		promptBox,
 		m.theme.Hint.Render("Enter: search command  |  Ctrl+C: quit"),
 	}
 	if m.errText != "" {
@@ -517,9 +641,13 @@ func (m model) viewInput() string {
 }
 
 func (m model) viewSearching() string {
+	text := m.searchStatus
+	if text == "" {
+		text = "parsing intent"
+	}
 	return strings.Join([]string{
 		m.theme.Title.Render("Searching"),
-		m.theme.Spinner.Render(m.spinner.View() + " Matching command templates..."),
+		m.theme.Spinner.Render(m.spinner.View() + " " + text),
 		m.theme.Dim.Render("Query: " + m.query),
 	}, "\n")
 }
@@ -529,10 +657,17 @@ func (m model) viewResult() string {
 		return m.theme.Error.Render("No results")
 	}
 	main := m.matches[m.selected]
+	mainCmd := m.finalCmd
+	if m.safety.Level == safety.LevelDangerous {
+		mainCmd = highlightDangerous(mainCmd)
+	}
+	confidence := m.renderConfidence(main.Score)
+	flags := renderFlags(main.Entry.Flags)
 	mainBlock := strings.Join([]string{
-		m.theme.SectionTitle.Render("Selected Command"),
-		m.theme.Command.Render(m.finalCmd),
+		m.theme.SectionTitle.Render("Selected Command  " + confidence),
+		m.theme.Command.Render(mainCmd),
 		m.theme.Subtitle.Render(main.Entry.Explanation),
+		flags,
 	}, "\n")
 
 	alt := make([]string, 0, 2)
@@ -540,15 +675,20 @@ func (m model) viewResult() string {
 		if i == m.selected {
 			continue
 		}
-		alt = append(alt, m.theme.Alternative.Render(fmt.Sprintf("%d) %s  (%0.3f)", i+1, item.Entry.CommandTemplate, item.Score)))
+		alt = append(alt, m.theme.Alternative.Render(fmt.Sprintf("%d) %s  %s", i+1, item.Entry.CommandTemplate, m.renderConfidence(item.Score))))
 		if len(alt) == 2 {
 			break
 		}
 	}
 
+	card := m.theme.MainResult
+	if m.safety.Level == safety.LevelDangerous {
+		card = m.theme.DangerBox
+	}
+
 	parts := []string{
 		m.theme.Title.Render("Result"),
-		m.theme.MainResult.Render(mainBlock),
+		card.Render(mainBlock),
 		m.theme.SectionTitle.Render("Alternatives"),
 	}
 	if len(alt) == 0 {
@@ -584,12 +724,12 @@ func (m model) viewConfirm() string {
 	} else if m.safety.Level == safety.LevelDangerous {
 		parts = append(parts,
 			m.theme.DangerTitle.Render("Type yes explicitly to run this command."),
-			m.confirm.View(),
+			m.theme.DangerBox.Render(m.confirm.View()),
 			m.theme.Hint.Render("Enter: submit  |  n/Esc: cancel  |  e: explain"),
 		)
 	} else {
 		parts = append(parts,
-			m.theme.Hint.Render("Enter/y: run  |  n/Esc: cancel  |  e: explain"),
+			m.theme.Hint.Render("Run now?  [y] yes  [n] no  [e] explain"),
 		)
 	}
 
@@ -621,16 +761,29 @@ func (m model) renderSafetyBox() string {
 }
 
 func (m model) viewRunning() string {
+	lines := make([]string, 0, len(m.runOut)+len(m.runErr))
+	for _, line := range m.runOut {
+		lines = append(lines, m.theme.OutputLine.Render(line))
+	}
+	for _, line := range m.runErr {
+		lines = append(lines, m.theme.ErrorLine.Render(line))
+	}
+	visible := m.windowLines(lines, max(6, m.height/3), m.runScroll)
+	scrollHint := ""
+	if len(lines) > len(visible) {
+		scrollHint = m.theme.Dim.Render(fmt.Sprintf("Scroll: %d/%d (j/k, PgUp/PgDn)", m.runScroll+1, len(lines)))
+	}
+
 	parts := []string{
 		m.theme.Title.Render("Running"),
 		m.theme.Dim.Render(m.runStatus),
 		m.theme.Command.Render(m.finalCmd),
 		"",
 		m.theme.SectionTitle.Render("Output"),
-		m.theme.Output.Render(strings.Join(m.runOut, "\n")),
+		m.theme.OutputPane.Render(strings.Join(visible, "\n")),
 	}
-	if len(m.runErr) > 0 {
-		parts = append(parts, m.theme.SectionTitle.Render("Errors"), m.theme.Output.Render(strings.Join(m.runErr, "\n")))
+	if scrollHint != "" {
+		parts = append(parts, scrollHint)
 	}
 	if m.runDone {
 		parts = append(parts, m.theme.Hint.Render("Was this correct? y: yes  |  n: no (logs miss)"))
@@ -644,12 +797,12 @@ func (m model) viewRunning() string {
 func (m model) viewExplain() string {
 	parts := []string{
 		m.theme.Title.Render("Explain"),
-		m.theme.Dim.Render("Provider: " + m.explainer.ProviderName()),
+		m.theme.ExplainLabel.Render("LLM: " + m.explainer.ProviderName()),
 	}
 	if strings.TrimSpace(m.explainMD) == "" {
 		parts = append(parts, m.theme.Spinner.Render(m.spinner.View()+" Generating explanation..."))
 	} else {
-		parts = append(parts, m.explainMD)
+		parts = append(parts, m.theme.ExplainPane.Render(m.explainMD))
 	}
 	if m.explainErr != "" {
 		parts = append(parts, m.theme.Error.Render(m.explainErr))
@@ -660,11 +813,18 @@ func (m model) viewExplain() string {
 	return strings.Join(parts, "\n")
 }
 
-func searchCmd(engine *search.Engine, query string) tea.Cmd {
+func startSearchCmd(engine *search.Engine, query string) tea.Cmd {
 	return func() tea.Msg {
-		intent := parser.ParseIntent(query)
-		matches := engine.Search(intent, 3)
-		return searchDoneMsg{intent: intent, matches: matches, query: query}
+		ch := make(chan tea.Msg, 4)
+		go func() {
+			ch <- searchProgressMsg{text: "parsing intent", ch: ch}
+			intent := parser.ParseIntent(query)
+			ch <- searchProgressMsg{text: fmt.Sprintf("searching %d commands", engine.EntryCount()), ch: ch}
+			matches := engine.Search(intent, 3)
+			ch <- searchDoneMsg{intent: intent, matches: matches, query: query}
+			close(ch)
+		}()
+		return waitForChan(ch)()
 	}
 }
 
@@ -712,6 +872,202 @@ func waitForChan(ch <-chan tea.Msg) tea.Cmd {
 	}
 }
 
+func (m model) renderPromptBox() string {
+	style := m.theme.InputNeutral
+	label := "● idle"
+	switch m.inputSignal {
+	case "recognized":
+		style = m.theme.InputRecognized
+		label = "◉ intent"
+	case "confident":
+		style = m.theme.InputConfident
+		label = "● confident"
+	case "unsure":
+		style = m.theme.InputUnsure
+		label = "◌ unsure"
+	}
+	if !m.supportsUnicode {
+		label = strings.ReplaceAll(strings.ReplaceAll(label, "●", "*"), "◉", "*")
+		label = strings.ReplaceAll(label, "◌", "-")
+	}
+	modePrefix := m.currentModePrefix()
+	return style.Render(modePrefix + " " + m.input.View() + "\n" + m.theme.Dim.Render(label))
+}
+
+func inferInputSignal(query string) string {
+	q := strings.TrimSpace(query)
+	if q == "" {
+		return "neutral"
+	}
+	intent := parser.ParseIntent(q)
+	hasAction := strings.TrimSpace(intent.Action) != ""
+	hasTarget := strings.TrimSpace(intent.Target) != ""
+	if hasAction && hasTarget {
+		return "confident"
+	}
+	if hasAction {
+		return "recognized"
+	}
+	if len(strings.Fields(q)) >= 3 {
+		return "unsure"
+	}
+	return "neutral"
+}
+
+func (m model) renderConfidence(score float64) string {
+	if !m.supportsColor {
+		if score >= 0.75 {
+			return "[high]"
+		}
+		if score >= 0.45 {
+			return "[mid]"
+		}
+		return "[low]"
+	}
+	dot := "●"
+	if !m.supportsUnicode {
+		dot = "*"
+	}
+	if score >= 0.75 {
+		return m.theme.ConfidenceHigh.Render(dot)
+	}
+	if score >= 0.45 {
+		return m.theme.ConfidenceMid.Render(dot)
+	}
+	return m.theme.ConfidenceLow.Render(dot)
+}
+
+func renderFlags(flags []search.CommandFlag) string {
+	if len(flags) == 0 {
+		return ""
+	}
+	maxTags := min(3, len(flags))
+	tags := make([]string, 0, maxTags)
+	for i := 0; i < maxTags; i++ {
+		tags = append(tags, "["+flags[i].Flag+"]")
+	}
+	return strings.Join(tags, " ")
+}
+
+func highlightDangerous(cmd string) string {
+	replacer := strings.NewReplacer(
+		"rm -rf", "[rm -rf]",
+		"del /f", "[del /f]",
+		"mkfs", "[mkfs]",
+	)
+	return replacer.Replace(cmd)
+}
+
+func (m model) windowLines(lines []string, height, scroll int) []string {
+	if len(lines) == 0 {
+		return []string{m.theme.Dim.Render("(no output yet)")}
+	}
+	if height <= 0 {
+		height = 8
+	}
+	if scroll < 0 {
+		scroll = 0
+	}
+	if scroll >= len(lines) {
+		scroll = len(lines) - 1
+	}
+	start := scroll
+	end := min(len(lines), start+height)
+	return lines[start:end]
+}
+
+func (m model) renderStatusBar() string {
+	mode := m.currentModeLabel()
+	llmIcon := "●"
+	if !m.supportsUnicode {
+		llmIcon = "*"
+	}
+	llmText := "LLM off"
+	llmStyle := m.theme.StatusMuted
+	if m.llmAvailable {
+		llmText = "LLM ready"
+		llmStyle = m.theme.StatusOK
+	}
+	parts := []string{
+		m.theme.StatusMode.Render("Mode: " + mode),
+		m.theme.StatusMuted.Render(fmt.Sprintf("Commands: %d", m.commandCount)),
+		llmStyle.Render(llmIcon + " " + llmText),
+	}
+	return m.theme.StatusBar.Render(strings.Join(parts, "  |  "))
+}
+
+func (m model) currentModeLabel() string {
+	switch m.state {
+	case stateExplain:
+		return "explain"
+	case stateConfirm:
+		if len(m.missing) > 0 {
+			return "add"
+		}
+		return "command"
+	default:
+		return "command"
+	}
+}
+
+func (m model) currentModePrefix() string {
+	switch m.currentModeLabel() {
+	case "explain":
+		if m.supportsUnicode {
+			return "[?]"
+		}
+		return "[E]"
+	case "add":
+		return "[+]"
+	default:
+		return "[>]"
+	}
+}
+
+func (m model) viewWelcome() string {
+	logo := []string{
+		"  ____  _          _ _    _    ___ ",
+		" / ___|| |__   ___| | |  / \\  |_ _|",
+		" \\___ \\| '_ \\ / _ \\ | | / _ \\  | | ",
+		"  ___) | | | |  __/ | |/ ___ \\ | | ",
+		" |____/|_| |_|\\___|_|_/_/   \\_\\___|",
+	}
+	if !m.supportsUnicode {
+		logo = []string{"ShellAI"}
+	}
+	items := make([]string, 0, len(welcomeExamples))
+	for i, ex := range welcomeExamples {
+		prefix := "  "
+		if i == m.welcomeIndex {
+			prefix = "> "
+		}
+		items = append(items, m.theme.WelcomeItem.Render(prefix+ex))
+	}
+	return strings.Join([]string{
+		m.theme.Title.Render(strings.Join(logo, "\n")),
+		m.theme.Subtitle.Render("Intent-first shell assistant with safe execution and explain mode."),
+		"",
+		m.theme.SectionTitle.Render("Try an example"),
+		strings.Join(items, "\n"),
+		"",
+		m.theme.Hint.Render("Up/Down: choose  |  Enter: start  |  Esc: skip"),
+	}, "\n")
+}
+
+func shouldShowWelcome() bool {
+	marker := filepath.Join(config.ConfigDir(), ".welcome_seen")
+	_, err := os.Stat(marker)
+	return os.IsNotExist(err)
+}
+
+func markWelcomeSeen() error {
+	marker := filepath.Join(config.ConfigDir(), ".welcome_seen")
+	if err := os.MkdirAll(filepath.Dir(marker), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(marker, []byte("seen\n"), 0o644)
+}
+
 func applyManualValues(command string, missing []string, values map[string]string) (string, []string) {
 	resolved := command
 	for key, val := range values {
@@ -748,6 +1104,13 @@ func contains(items []string, target string) bool {
 
 func max(a, b int) int {
 	if a > b {
+		return a
+	}
+	return b
+}
+
+func min(a, b int) int {
+	if a < b {
 		return a
 	}
 	return b
