@@ -170,8 +170,8 @@ jobs:
         shell: pwsh
         run: |
           if (Test-Path server.pid) {
-            $pid = Get-Content server.pid | Select-Object -First 1
-            if ($pid) { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue }
+            $serverPid = Get-Content server.pid | Select-Object -First 1
+            if ($serverPid) { Stop-Process -Id $serverPid -Force -ErrorAction SilentlyContinue }
           }
 
   release:
