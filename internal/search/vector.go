@@ -39,10 +39,16 @@ type Engine struct {
 	idf      map[string]float64
 	vecNorms []float64
 	postings map[string][]int
+	cache    *resultCache
 }
 
 var nonWordPattern = regexp.MustCompile(`[^a-z0-9]+`)
 var whitespacePattern = regexp.MustCompile(`\s+`)
+
+const (
+	searchCacheCapacity = 500
+	searchCacheTopK     = 3
+)
 
 func NewEngineFromJSON(path string) (*Engine, error) {
 	entries, err := LoadEntriesFromJSON(path)
@@ -164,6 +170,7 @@ func NewEngine(entries []CommandEntry) *Engine {
 		idf:      idf,
 		vecNorms: vecNorms,
 		postings: postings,
+		cache:    newResultCache(searchCacheCapacity),
 	}
 }
 
@@ -173,7 +180,21 @@ func (e *Engine) Search(intent parser.ParsedIntent, topK int) []ScoredMatch {
 	}
 
 	query := IntentToQuery(intent)
-	queryVec, queryNorm := e.queryVector(query)
+	normalizedQuery := normalizeQuery(query)
+	if normalizedQuery == "" {
+		return nil
+	}
+
+	if topK <= searchCacheTopK {
+		if cached, ok := e.cache.Get(normalizedQuery); ok {
+			if topK > len(cached) {
+				topK = len(cached)
+			}
+			return cloneMatches(cached, topK)
+		}
+	}
+
+	queryVec, queryNorm := e.queryVector(normalizedQuery)
 	if queryNorm == 0 {
 		return nil
 	}
@@ -211,11 +232,19 @@ func (e *Engine) Search(intent parser.ParsedIntent, topK int) []ScoredMatch {
 		return results[i].Score > results[j].Score
 	})
 
+	cacheCount := searchCacheTopK
+	if cacheCount > len(results) {
+		cacheCount = len(results)
+	}
+	if cacheCount > 0 {
+		e.cache.Put(normalizedQuery, cloneMatches(results, cacheCount))
+	}
+
 	if topK > len(results) {
 		topK = len(results)
 	}
 
-	return results[:topK]
+	return cloneMatches(results, topK)
 }
 
 func (e *Engine) candidateDocIDs(queryVec map[string]float64) []int {
@@ -248,6 +277,10 @@ func IntentToQuery(intent parser.ParsedIntent) string {
 		parts = append(parts, f.Type, f.Value)
 	}
 	return strings.TrimSpace(strings.Join(parts, " "))
+}
+
+func normalizeQuery(text string) string {
+	return strings.Join(tokenize(text), " ")
 }
 
 func (e *Engine) queryVector(text string) (map[string]float64, float64) {
@@ -306,4 +339,16 @@ func termFrequency(tokens []string) map[string]float64 {
 	}
 
 	return freq
+}
+
+func cloneMatches(matches []ScoredMatch, n int) []ScoredMatch {
+	if n <= 0 || len(matches) == 0 {
+		return nil
+	}
+	if n > len(matches) {
+		n = len(matches)
+	}
+	cloned := make([]ScoredMatch, n)
+	copy(cloned, matches[:n])
+	return cloned
 }
