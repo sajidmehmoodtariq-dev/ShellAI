@@ -17,16 +17,16 @@ const (
 type ConfirmationMode string
 
 const (
-	ConfirmSimple    ConfirmationMode = "simple_confirm"
-	ConfirmExplicit  ConfirmationMode = "explicit_confirm"
-	ConfirmTypedYes  ConfirmationMode = "typed_yes"
+	ConfirmSimple   ConfirmationMode = "simple_confirm"
+	ConfirmExplicit ConfirmationMode = "explicit_confirm"
+	ConfirmTypedYes ConfirmationMode = "typed_yes"
 )
 
 type Assessment struct {
-	Level           SafetyLevel
-	Confirmation    ConfirmationMode
-	Reasons         []string
-	AffectedPaths   []string
+	Level            SafetyLevel
+	Confirmation     ConfirmationMode
+	Reasons          []string
+	AffectedPaths    []string
 	WhatCouldGoWrong []string
 }
 
@@ -98,10 +98,10 @@ func Analyze(command string) Assessment {
 
 	if len(reasons) == 0 {
 		return Assessment{
-			Level:           LevelSafe,
-			Confirmation:    ConfirmSimple,
-			Reasons:         []string{"No high-risk pattern detected by safety guard."},
-			AffectedPaths:   affected,
+			Level:            LevelSafe,
+			Confirmation:     ConfirmSimple,
+			Reasons:          []string{"No high-risk pattern detected by safety guard."},
+			AffectedPaths:    affected,
 			WhatCouldGoWrong: nil,
 		}
 	}
@@ -110,10 +110,10 @@ func Analyze(command string) Assessment {
 	impacts = uniqueStrings(impacts)
 
 	return Assessment{
-		Level:           level,
-		Confirmation:    confirmationFor(level),
-		Reasons:         reasons,
-		AffectedPaths:   affected,
+		Level:            level,
+		Confirmation:     confirmationFor(level),
+		Reasons:          reasons,
+		AffectedPaths:    affected,
 		WhatCouldGoWrong: impacts,
 	}
 }

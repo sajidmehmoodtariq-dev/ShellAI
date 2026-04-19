@@ -97,7 +97,7 @@ func TestMissingSourceDoesNotGuess(t *testing.T) {
 func TestPatternFromExtensionFilter(t *testing.T) {
 	engine := NewTemplateEngineWithMediaRoot(t.TempDir())
 	intent := parser.ParsedIntent{
-		Raw: "find files with extension .jpg",
+		Raw:     "find files with extension .jpg",
 		Filters: []parser.Filter{{Type: "extension", Value: ".jpg"}},
 	}
 
