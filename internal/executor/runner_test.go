@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -89,15 +90,15 @@ func TestRunnerReportsExitCodeOnFailure(t *testing.T) {
 
 func buildListCommand(path string) string {
 	cleanPath := filepath.ToSlash(path)
-	if strings.Contains(strings.ToLower(os.Getenv("SHELL")), "cmd") {
+	if runtime.GOOS == "windows" {
 		return "dir " + cleanPath
 	}
 	return "ls " + cleanPath
 }
 
 func buildFailCommand() string {
-	if strings.Contains(strings.ToLower(os.Getenv("SHELL")), "cmd") {
-		return "exit /b 2"
+	if runtime.GOOS == "windows" {
+		return "exit 2"
 	}
 	return "false"
 }

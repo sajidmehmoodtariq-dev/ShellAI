@@ -1218,5 +1218,25 @@
                   ],
         "danger":  false,
         "platform":  "darwin"
+            },
+            {
+                "intent":  "Show current directory",
+                "keywords":  [
+                                 "where am i",
+                                 "current directory",
+                                 "working directory",
+                                 "what directory am i in",
+                                 "pwd"
+                             ],
+                "command_template":  "pwd",
+                "explanation":  "Displays the current working directory.",
+                "flags":  [
+                              {
+                                  "flag":  "-P",
+                                  "description":  "Print physical path without symlinks."
+                              }
+                          ],
+                "danger":  false,
+                "platform":  "darwin"
     }
 ]

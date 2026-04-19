@@ -67,6 +67,17 @@ var destinationKeywords = map[string]struct{}{
 
 func ParseIntent(input string) ParsedIntent {
 	tokens := Tokenize(input)
+	rawLower := strings.ToLower(strings.TrimSpace(input))
+
+	if isCurrentDirectoryQuery(rawLower) {
+		return ParsedIntent{
+			Raw:         input,
+			Action:      "show",
+			Target:      "directory",
+			Filters:     nil,
+			Destination: "",
+		}
+	}
 
 	return ParsedIntent{
 		Raw:         input,
@@ -222,4 +233,30 @@ func isArchiveExtension(ext string) bool {
 	default:
 		return false
 	}
+}
+
+func isCurrentDirectoryQuery(raw string) bool {
+	if raw == "" {
+		return false
+	}
+
+	patterns := []string{
+		"where am i",
+		"where i am",
+		"current directory",
+		"working directory",
+		"what is my directory",
+		"what directory am i in",
+		"show current directory",
+		"show working directory",
+		"pwd",
+	}
+
+	for _, p := range patterns {
+		if strings.Contains(raw, p) {
+			return true
+		}
+	}
+
+	return false
 }

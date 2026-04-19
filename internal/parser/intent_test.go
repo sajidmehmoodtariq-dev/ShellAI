@@ -131,6 +131,11 @@ func TestParseIntentTable(t *testing.T) {
 			input:    "",
 			expected: ParsedIntent{Action: "unknown", Target: "unknown", Filters: nil, Destination: ""},
 		},
+		{
+			name:     "where am i maps to directory",
+			input:    "where am i",
+			expected: ParsedIntent{Action: "show", Target: "directory", Filters: nil, Destination: ""},
+		},
 	}
 
 	for _, tc := range tests {
