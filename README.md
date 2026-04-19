@@ -32,6 +32,7 @@ It combines command search, templates, safety checks, optional LLM explanations,
 - `shellai share` - export user command entries.
 - `shellai import` - import command entries from file or URL.
 - `shellai update-db` - refresh installed command database for your platform.
+- `shellai upgrade` - upgrade ShellAI from GitHub Releases.
 - `shellai uninstall` - remove ShellAI from this machine.
 - `shellai stats` - review hit counts and never-matched commands.
 - `shellai explain` - force explanation mode.
@@ -231,6 +232,24 @@ Pin to a specific release tag:
 
 ```bash
 shellai update-db --version v0.1.4
+```
+
+Upgrade ShellAI directly from your shell:
+
+```bash
+shellai upgrade
+```
+
+Upgrade to a specific version:
+
+```bash
+shellai upgrade --version v0.1.6
+```
+
+Skip command database refresh during upgrade:
+
+```bash
+shellai upgrade --skip-db
 ```
 
 ## Accuracy Feedback Loop
